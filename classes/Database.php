@@ -1,18 +1,17 @@
 <?php
 class Database {
-    private $dsn = "mysql:host=localhost;dbname=gestionBlog";
+    private $servername = "localhost";
     private $username = "root";
     private $password = "hamdi";
+    private $dbname = "blogOOP";
     public $conn;
 
-    // Constructor to establish a database connection using PDO
+    // Constructor to establish a database connection
     public function __construct() {
-        try {
-            $this->conn = new PDO($this->dsn, $this->username, $this->password);
-            // Set the PDO error mode to exception
-            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        } catch (PDOException $e) {
-            die("Connection failed: " . $e->getMessage());
+        $this->conn = new mysqli($this->servername, $this->username, $this->password, $this->dbname);
+
+        if ($this->conn->connect_error) {
+            die("Connection failed: " . $this->conn->connect_error);
         }
     }
 
@@ -28,7 +27,7 @@ class Database {
 
     // Close the database connection
     public function close() {
-        $this->conn = null;
+        $this->conn->close();
     }
 }
 ?>

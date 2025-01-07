@@ -1,5 +1,5 @@
-CREATE DATABASE gestionBlog;
-USE gestionBlog;
+CREATE DATABASE blogOOP;
+USE blogOOP;
 
 CREATE TABLE roles (
     id INT AUTO_INCREMENT PRIMARY KEY,
