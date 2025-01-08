@@ -1,11 +1,11 @@
 <link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.css"  rel="stylesheet" />
 
 <?php
-
 session_start();
 
-require_once 'Database.php';
-require_once 'Authentication.php';
+require_once '../classes/Database.php';
+require_once '../classes/Authentication.php';
+require_once '../classes/User.php';
 
 $db = new Database();
 $auth = new Authentication($db->conn);
@@ -17,23 +17,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $password = $_POST['password'];
 
     if ($auth->login($usernameOrEmail, $password)) {
-        header("Location: /index.php"); 
+        $user = new User($db->conn, $_SESSION['user_id']);
+        
+        if ($user->role_id == 1) {
+            header("Location: /admin/dashboard.php");
+        } else {
+            header("Location: /index.php");
+        }
         exit;
     } else {
-        echo "Mot de passe ou utilisateur incorrect.";
+        echo "Nom d'utilisateur ou mot de passe incorrect.";
     }
 }
 ?>
+
 <header class="flex justify-between p-4 fixed top-0 left-0 right-0 bg-white shadow-md z-50">
-<a href="/home.php" class="flex items-center mb-4 sm:mb-0 space-x-3 rtl:space-x-reverse">
+    <a href="/home.php" class="flex items-center mb-4 sm:mb-0 space-x-3 rtl:space-x-reverse">
         <img src="/images/icon.png" class="h-8" alt="MyBlogPlatform Logo" />
         <span class="text-2xl font-bold whitespace-nowrap dark:text-gray-500"> MyBlogPlatform</span>
     </a>
     <div class="lg:hidden" id="burger-icon">
         <img src="/images/menu.png" alt="Menu">
     </div>
-    <div id="sidebar"
-        class="shadow-xl fixed top-0 right-0 w-1/3 h-full bg-gray-200 z-50 transform translate-x-full duration-300">
+    <div id="sidebar" class="shadow-xl fixed top-0 right-0 w-1/3 h-full bg-gray-200 z-50 transform translate-x-full duration-300">
         <div class="flex justify-end p-4">
             <button id="close-sidebar" class="text-3xl">X</button>
         </div>
@@ -51,26 +57,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
     <div class="hidden lg:flex justify-center space-x-4">
         <ul class="flex items-center text-sm font-medium text-gray-400 mb-0">
-            <li>
-                <a href="/home.php" class="hover:underline me-4 md:me-6">Home</a>
-            </li>
-            <li>
-                <a href="/index.php" class="hover:underline me-4 md:me-6">Blog</a>
-            </li>
+            <li><a href="/home.php" class="hover:underline me-4 md:me-6">Home</a></li>
+            <li><a href="/index.php" class="hover:underline me-4 md:me-6">Blog</a></li>
             <?php if ($userLoggedIn): ?>
-                <li>
-                    <a href="/pages/profile.php" class="hover:underline me-4 md:me-6">Profile</a>
-                </li>
-                <li>
-                    <a href="/pages/dashboard.php" class="hover:underline me-4 md:me-6">Dashboard</a>
-                </li>
-                <li>
-                    <a href="/pages/logout.php" class="text-red-500 hover:underline me-4 md:me-6">Log out</a>
-                </li>
+                <li><a href="/pages/profile.php" class="hover:underline me-4 md:me-6">Profile</a></li>
+                <li><a href="/pages/dashboard.php" class="hover:underline me-4 md:me-6">Dashboard</a></li>
+                <li><a href="/pages/logout.php" class="text-red-500 hover:underline me-4 md:me-6">Log out</a></li>
             <?php else: ?>
-                <li>
-                    <a href="/pages/signup.php" class="text-white bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 me-4 md:me-6">Sign Up</a>
-                </li>
+                <li><a href="/pages/signup.php" class="text-white bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 me-4 md:me-6">Sign Up</a></li>
             <?php endif; ?>
         </ul>
     </div>
@@ -86,11 +80,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <form class="space-y-4 md:space-y-6" action="#" method="post">
                     <div>
                         <label for="email" class="block mb-2 text-sm font-medium text-gray-900">Your email</label>
-                        <input type="email" name="usernameOrEmail" id="email" class="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" required="">
+                        <input type="email" name="usernameOrEmail" id="email" class="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" required=""/>
                     </div>
                     <div>
                         <label for="password" class="block mb-2 text-sm font-medium text-gray-900">Password</label>
-                        <input type="password" name="password" id="password" class="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" required="">
+                        <input type="password" name="password" id="password" class="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" required=""/>
                     </div>
                     <div class="flex items-center justify-between"></div>
                     <button type="submit" class="w-full bg-blue-500 hover:bg-blue-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center text-white">Sign in</button>

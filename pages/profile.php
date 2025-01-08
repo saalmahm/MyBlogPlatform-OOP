@@ -1,41 +1,29 @@
 <?php
-include('../includes/db.php');
 session_start();
-$userLoggedIn = isset($_SESSION['user_id']); 
+require_once '/classes/Database.php';
+require_once '/classes/User.php'; 
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php'); 
+    header('Location: login.php');
     exit;
 }
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+
+$db = new Database();
+$user = new User($db->conn, $_SESSION['user_id']);
+
+// Handle article submission
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['title'], $_POST['content'], $_POST['tags'])) {
     $title = $_POST['title'];
     $content = $_POST['content'];
-    $user_id = $_SESSION['user_id'];
     $tags = $_POST['tags']; 
 
     if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
         $image = $_FILES['image']['name'];
-        $target_dir ='../uploads/';
+        $target_dir = '../uploads/';
         $target_file = $target_dir . basename($image);
 
         if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
-            $query = "INSERT INTO articles (title, content, image, user_id) VALUES (?, ?, ?, ?)";
-            $stmt = $conn->prepare($query);
-            $stmt->bind_param("sssi", $title, $content, $image, $user_id);
-
-            if ($stmt->execute()) {
-                $article_id = $stmt->insert_id;
-
-                $tag_query = "INSERT INTO article_tags (article_id, tag_id) VALUES (?, ?)";
-                $tag_stmt = $conn->prepare($tag_query);
-
-                foreach ($tags as $tag_id) {
-                    $tag_stmt->bind_param("ii", $article_id, $tag_id);
-                    $tag_stmt->execute();
-                }
-            } else {
-                echo "Erreur : " . $stmt->error;
-            }
+            $user->addArticle($title, $content, $tags, $image);
         } else {
             echo "Erreur lors du téléchargement de l'image.";
         }
@@ -44,39 +32,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-if ($userLoggedIn && isset($_GET['like'])) {
+// Handle liking or unliking an article
+if (isset($_GET['like'])) {
     $article_id = $_GET['like'];
-    $user_id = $_SESSION['user_id'];
-    
-    // Vérifie si l'user deja aimer ce article
-    $checkLikeQuery = "SELECT * FROM likes WHERE user_id = $user_id AND article_id = $article_id";
-    $checkLikeResult = mysqli_query($conn, $checkLikeQuery);
-
-    if (mysqli_num_rows($checkLikeResult) == 0) {
-        // ajouter like si l'ser na pas encore aimer
-        $likeQuery = "INSERT INTO likes (user_id, article_id) VALUES ($user_id, $article_id)";
-        mysqli_query($conn, $likeQuery);
-    } else {
-        // supprimer like si l'iser deja liker
-        $unlikeQuery = "DELETE FROM likes WHERE user_id = $user_id AND article_id = $article_id";
-        mysqli_query($conn, $unlikeQuery);
-    }
+    $user->likeOrUnlikeArticle($article_id);
 }
 
-if ($userLoggedIn) {
-    $userId = $_SESSION['user_id'];
-
-    $sql = "SELECT role_id FROM users WHERE id = $userId";
-    $result = $conn->query($sql);
-    $role = null;
-    
-    if ($result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        $role = $row['role_id']; 
-    }
-}
+// Fetch user role
+$role = $user->role_id;
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
