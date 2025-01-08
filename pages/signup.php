@@ -1,30 +1,24 @@
 <link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.css"  rel="stylesheet" />
 
 <?php
-require '../includes/db.php';
-
 session_start();
-$userLoggedIn = isset($_SESSION['user_id']); 
+require_once '/classes/Database.php'; 
+require_once '/classes/Authentication.php'; 
+
+$db = new Database();
+$conn = $db->conn;
+
+$auth = new Authentication($conn);
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = $_POST['username'];
     $email = $_POST['email'];
-    $password = password_hash($_POST['password'], PASSWORD_BCRYPT); 
-    $role_id = 2; 
+    $password = $_POST['password']; 
 
-    $checkQuery = "SELECT * FROM users WHERE email = '$email' OR username = '$username'";
-    $checkResult = mysqli_query($conn, $checkQuery);
-
-    if (mysqli_num_rows($checkResult) > 0) {
-        echo "L'utilisateur existe déjà.";
+    if ($auth->signup($username, $email, $password)) {
+        header("Location: ./login.php");
     } else {
-        $query = "INSERT INTO users (username, email, password, role_id) VALUES ('$username', '$email', '$password', $role_id)";
-
-        if (mysqli_query($conn, $query)) {
-            header("Location:./login.php");
-        } else {
-            echo "Erreur : " . mysqli_error($conn);
-        }
+        echo "L'utilisateur existe déjà.";
     }
 }
 ?>
