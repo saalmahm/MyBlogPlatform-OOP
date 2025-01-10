@@ -1,12 +1,17 @@
 <?php
-include("../includes/db.php");
 session_start();
+require_once '/classes/Database.php';
+require_once '/classes/Comment.php';
+
+$db = new Database();
+$conn = $db->connect();
 
 // Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
     header('Location: /pages/login.php');
     exit();
 }
+
 // Récupérer les données via POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user_id = $_SESSION['user_id'];
@@ -15,11 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Validation simple
     if (!empty($content) && $article_id > 0) {
-        $query = "INSERT INTO comments (content, user_id, article_id) VALUES (?, ?, ?)";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param('sii', $content, $user_id, $article_id);
-        
-        if ($stmt->execute()) {
+        $comment = new Comment($conn);
+        if ($comment->addComment($article_id, $user_id, $content)) {
             // Rediriger vers la page d'article
             header("Location: /index.php");
             exit();

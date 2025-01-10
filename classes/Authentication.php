@@ -1,65 +1,60 @@
 <?php
-class Authentication {
-    private $db;
+class Authentification {
+    private $conn;
 
-    // Constructor to initialize the database connection
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct($dbConnection) {
+        $this->conn = $dbConnection;
     }
 
-    // Method to handle user login
-    public function login($email, $password) {
-        $sql = "SELECT * FROM users WHERE email = :email";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':email', $email);
+    public function register($username, $email, $password) {
+        $passwordHash = password_hash($password, PASSWORD_BCRYPT);
+        $checkQuery = "SELECT * FROM users WHERE email = ? OR username = ?";
+        $stmt = $this->conn->prepare($checkQuery);
+        $stmt->bind_param("ss", $email, $username);
         $stmt->execute();
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $result = $stmt->get_result();
 
-        if ($result && password_verify($password, $result['password'])) {
-            $_SESSION['user_id'] = $result['id'];
-            $_SESSION['username'] = $result['username'];
+        if ($result->num_rows > 0) {
+            return "L'utilisateur existe déjà.";
+        }
+
+        $insertQuery = "INSERT INTO users (username, email, password, role_id) VALUES (?, ?, ?, 2)";
+        $stmt = $this->conn->prepare($insertQuery);
+        $stmt->bind_param("sss", $username, $email, $passwordHash);
+
+        if ($stmt->execute()) {
             return true;
         } else {
-            return false;
+            return "Erreur lors de l'inscription : " . $stmt->error;
         }
     }
 
-    // Method to handle user logout
-    public function logout() {
-        session_unset();
-        session_destroy();
-    }
-
-    // Method to verify if a session is active
-    public function verifierSession() {
-        return isset($_SESSION['user_id']);
-    }
-
-    // Method to handle user signup
-    public function signup($username, $email, $password) {
-        // Check if the username or email already exists
-        $sql = "SELECT * FROM users WHERE email = :email OR username = :username";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':email', $email);
-        $stmt->bindParam(':username', $username);
+    public function login($usernameOrEmail, $password) {
+        $query = "SELECT * FROM users WHERE username = ? OR email = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("ss", $usernameOrEmail, $usernameOrEmail);
         $stmt->execute();
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $result = $stmt->get_result();
 
-        if ($result) {
-            return false; // User already exists
+        if ($result->num_rows > 0) {
+            $user = $result->fetch_assoc();
+            if (password_verify($password, $user['password'])) {
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['username'] = $user['username'];
+                return true;
+            } else {
+                return "Mot de passe incorrect.";
+            }
+        } else {
+            return "Utilisateur non trouvé.";
         }
+    }
 
-        // Hash the password and insert the new user
-        $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
-        $role_id = 2; // Default user role
-
-        $sql = "INSERT INTO users (username, email, password, role_id) VALUES (:username, :email, :password, :role_id)";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':username', $username);
-        $stmt->bindParam(':email', $email);
-        $stmt->bindParam(':password', $hashedPassword);
-        $stmt->bindParam(':role_id', $role_id);
-        return $stmt->execute();
+    public function logout() {
+        session_unset(); 
+        session_destroy();
+        return true;  
     }
 }
+
 ?>

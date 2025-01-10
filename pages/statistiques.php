@@ -1,42 +1,28 @@
 <?php
-include("../includes/db.php");
-
-if ($conn === null) {
-    die("Connexion échouée");
-}
-
 session_start();
-$userLoggedIn = isset($_SESSION['user_id']); 
+require_once '/classes/Database.php';
+require_once '/classes/Admin.php';
 
+$db = new Database();
+$conn = $db->connect();
+
+// Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php'); 
+    header('Location: login.php');
     exit;
 }
 
-$sql_articles = "SELECT COUNT(*) AS total_articles FROM articles";
-$sql_users = "SELECT COUNT(*) AS total_users FROM users";
-$sql_tags = "SELECT COUNT(DISTINCT tag_id) AS total_tags FROM article_tags"; // Exemple si vous avez une table de liens entre articles et tags
+$userLoggedIn = true;
+$userId = $_SESSION['user_id'];
 
-$result_articles = $conn->query($sql_articles);
-$result_users = $conn->query($sql_users);
-$result_tags = $conn->query($sql_tags);
+// Obtenir le rôle de l'utilisateur
+$admin = new Admin($conn);
+$role = $admin->getUserRole($userId);
 
-$total_articles = $result_articles->fetch_assoc()['total_articles'];
-$total_users = $result_users->fetch_assoc()['total_users'];
-$total_tags = $result_tags->fetch_assoc()['total_tags'];
-
-if ($userLoggedIn) {
-    $userId = $_SESSION['user_id'];
-
-    $sql = "SELECT role_id FROM users WHERE id = $userId";
-    $result = $conn->query($sql);
-    $role = null;
-    
-    if ($result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        $role = $row['role_id']; 
-    }
-}
+// Obtenir les statistiques
+$total_articles = $admin->getTotalArticles();
+$total_users = $admin->getTotalUsers();
+$total_tags = $admin->getTotalTags();
 ?>
 
 <!DOCTYPE html>

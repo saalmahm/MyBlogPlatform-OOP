@@ -1,30 +1,26 @@
 <?php
-
 session_start();
+require_once '/classes/Database.php';
+require_once '/classes/Article.php';
+require_once '/classes/ArticleTags.php';
 
+$db = new Database();
+$conn = $db->connect();
+
+// Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php'); 
     exit;
 }
+
 if (isset($_GET['id'])) {
     $article_id = $_GET['id'];
 
-    $query = "
-        SELECT articles.*, GROUP_CONCAT(tags.name SEPARATOR ', ') AS tags 
-        FROM articles
-        LEFT JOIN article_tags ON articles.id = article_tags.article_id
-        LEFT JOIN tags ON article_tags.tag_id = tags.id
-        WHERE articles.id = ?
-        GROUP BY articles.id
-    ";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("i", $article_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    $article = new Article($conn);
+    $articleDetails = $article->getArticleWithTags($article_id);
 
-    if ($result->num_rows > 0) {
-        $article = $result->fetch_assoc();
-        echo json_encode($article);
+    if ($articleDetails) {
+        echo json_encode($articleDetails);
     } else {
         echo json_encode([]);
     }

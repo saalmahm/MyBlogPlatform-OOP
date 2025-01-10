@@ -1,45 +1,68 @@
 <?php
 session_start();
-require_once '/classes/Database.php';
-require_once '/classes/User.php'; 
 
+// Inclure les classes
+include('/classes/Database.php');
+include('/classes/Authentification.php');
+include('/classes/Admin.php');
+include('/classes/Article.php');
+include('/classes/Tag.php');
+include('/classes/Like.php');
+include('/classes/ArticleTags.php');
+
+// Connexion à la base de données
+$db = (new Database())->connect();
+
+// Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
 
-$db = new Database();
-$user = new User($db->conn, $_SESSION['user_id']);
+$user_id = $_SESSION['user_id'];
+$auth = new Authentification($db);
+$admin = new Admin();
+$articleObj = new Article();
+$tagObj = new Tag();
+$likeObj = new Like();
+$articleTagsObj = new ArticleTags();
 
-// Handle article submission
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['title'], $_POST['content'], $_POST['tags'])) {
-    $title = $_POST['title'];
-    $content = $_POST['content'];
-    $tags = $_POST['tags']; 
+// Récupérer les informations de l'utilisateur
+$query = "SELECT username, role_id FROM users WHERE id = ?";
+$stmt = $db->prepare($query);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$stmt->bind_result($username, $role_id);
+$stmt->fetch();
 
-    if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-        $image = $_FILES['image']['name'];
-        $target_dir = '../uploads/';
-        $target_file = $target_dir . basename($image);
+// Traitement des actions
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Ajouter un article
+    if (isset($_POST['add_article'])) {
+        $title = $_POST['title'];
+        $content = $_POST['content'];
+        $tags = $_POST['tags'];
+        
+        if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
+            $image = $_FILES['image']['name'];
+            $target_dir = '../uploads/';
+            $target_file = $target_dir . basename($image);
 
-        if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
-            $user->addArticle($title, $content, $tags, $image);
+            if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
+                $article_id = $articleObj->createArticle($title, $content, $image, $user_id);
+                $articleTagsObj->addTagsToArticle($article_id, $tags);
+            } else {
+                echo "Erreur lors du téléchargement de l'image.";
+            }
         } else {
-            echo "Erreur lors du téléchargement de l'image.";
+            echo "Aucune image téléchargée ou erreur lors du téléchargement.";
         }
-    } else {
-        echo "Aucune image téléchargée ou erreur lors du téléchargement.";
     }
 }
 
-// Handle liking or unliking an article
-if (isset($_GET['like'])) {
-    $article_id = $_GET['like'];
-    $user->likeOrUnlikeArticle($article_id);
-}
+// Afficher les articles de l'utilisateur
+$articles = $articleObj->getArticlesByUser($user_id);
 
-// Fetch user role
-$role = $user->role_id;
 ?>
 <!DOCTYPE html>
 <html lang="en">

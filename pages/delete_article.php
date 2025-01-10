@@ -1,7 +1,13 @@
 <?php
-include('../includes/db.php');
 session_start();
+require_once '/classes/Database.php';
+require_once '/classes/Article.php';
+require_once '/classes/ArticleTags.php';
 
+$db = new Database();
+$conn = $db->connect();
+
+// Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php'); 
     exit;
@@ -10,22 +16,14 @@ if (!isset($_SESSION['user_id'])) {
 if (isset($_GET['id'])) {
     $article_id = $_GET['id'];
     
-    $check_query = "SELECT * FROM articles WHERE id = ?";
-    $stmt = $conn->prepare($check_query);
-    $stmt->bind_param("i", $article_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result->num_rows > 0) {
-        $delete_tags_query = "DELETE FROM article_tags WHERE article_id = ?";
-        $stmt_tags = $conn->prepare($delete_tags_query);
-        $stmt_tags->bind_param("i", $article_id);
-        $stmt_tags->execute();
+    $article = new Article($conn);
+    $articleTags = new ArticleTags($conn);
 
-        $delete_article_query = "DELETE FROM articles WHERE id = ?";
-        $stmt_article = $conn->prepare($delete_article_query);
-        $stmt_article->bind_param("i", $article_id);
-        if ($stmt_article->execute()) {
+    $article_result = $article->loadArticleById($article_id);
+    
+    if ($article_result) {
+        $articleTags->removeTagFromArticle($article_id, $tag_id); // Suppression des tags associés
+        if ($article->deleteArticle($article_id)) {
             header('Location: ./profile.php'); 
             exit;
         } else {
@@ -35,5 +33,6 @@ if (isset($_GET['id'])) {
         echo "Article introuvable.";
     }
 } else {
-    header('Location: ./profile.php'); }
+    header('Location: ./profile.php'); 
+}
 ?>

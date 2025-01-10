@@ -1,14 +1,24 @@
 <?php
-
-include("../includes/db.php");
+// Inclure les fichiers des classes Database et Admin
+include("/classes/Database.php");
+include("/classes/Admin.php");
 
 session_start();
 
+// Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php'); 
     exit;
 }
 
+// Créer une instance de la classe Database et se connecter
+$database = new Database();
+$conn = $database->connect();
+
+// Créer une instance de la classe Admin
+$admin = new Admin($conn);
+
+// Récupérer les détails de l'utilisateur à modifier
 if (isset($_GET["edit_user_id"])) {
     $user_id = $_GET["edit_user_id"];
     
@@ -16,37 +26,30 @@ if (isset($_GET["edit_user_id"])) {
         die("Connexion échouée");
     }
     
-    $sql = "SELECT * FROM users WHERE id=?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $user = $result->fetch_assoc();
+    // Utiliser la méthode de Admin pour récupérer l'utilisateur
+    $user = $admin->getUserById($user_id);
 
     if (!$user) {
         die("Utilisateur non trouvé");
     }
 }
 
-$sql_roles = "SELECT * FROM roles";
-$result_roles = $conn->query($sql_roles);
-$roles = $result_roles->fetch_all(MYSQLI_ASSOC);
+// Récupérer les rôles
+$roles = $admin->getRoles();
 
+// Mettre à jour l'utilisateur
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["update_user"])) {
     $update_user_role = $_POST["role_id"];
     
     if (empty($update_user_role)) {
         echo "Le rôle ne peut pas être vide.";
     } else {
-        $sql = "UPDATE users SET role_id=? WHERE id=?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ii", $update_user_role, $user_id);
-        
-        if ($stmt->execute()) {
+        // Utiliser la méthode de Admin pour mettre à jour l'utilisateur
+        if ($admin->updateUserRole($user_id, $update_user_role)) {
             header("Location: dashboard.php");
             exit();
         } else {
-            echo "Erreur lors de la mise à jour de l'utilisateur : " . $stmt->error;
+            echo "Erreur lors de la mise à jour de l'utilisateur.";
         }
     }
 }

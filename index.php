@@ -1,44 +1,41 @@
 <?php
-// Inclure les fichiers nécessaires
-require_once 'classes/Database.php';  // Inclure la classe Database
-require_once 'classes/Like.php';  // Inclure la classe Like
+session_start();
+require_once 'classes/Database.php';
+require_once 'classes/Article.php';
+require_once 'classes/Like.php';
 
 $db = new Database();
-$conn = $db->getConnection();  // Connexion PDO
+$conn = $db->connect();
+$userLoggedIn = isset($_SESSION['user_id']);
 
-session_start();
-$user_id = $_SESSION['user_id']; // Exemple d'ID utilisateur connecté
-
-// Exemple de l'ID d'un article
-$article_id = 1;
-
-// Créer une instance de la classe Like
-$like = new Like($conn);
-
-// Ajouter un like
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['like_article'])) {
+if ($userLoggedIn && isset($_GET['like'])) {
+    $article_id = $_GET['like'];
+    $user_id = $_SESSION['user_id'];
+    
+    $like = new Like($conn);
     if (!$like->userHasLiked($user_id, $article_id)) {
         $like->addLike($user_id, $article_id);
-        echo "Like ajouté!";
     } else {
-        echo "Vous avez déjà liké cet article!";
-    }
-}
-
-// Supprimer un like
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['remove_like'])) {
-    if ($like->userHasLiked($user_id, $article_id)) {
         $like->removeLike($user_id, $article_id);
-        echo "Like supprimé!";
-    } else {
-        echo "Vous n'avez pas liké cet article!";
     }
 }
 
-// Afficher le nombre de likes
-$likes = Like::getAllLikesForArticle($conn, $article_id);
-echo "Nombre de likes : " . count($likes);
+if ($userLoggedIn) {
+    $userId = $_SESSION['user_id'];
+
+    $admin = new Admin($conn);
+    $role = $admin->getUserRole($userId);
+}
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
 <header class="flex justify-between p-4 fixed top-0 left-0 right-0 bg-white shadow-md z-50">
     <a href="/home.php" class="flex items-center mb-4 sm:mb-0 space-x-3 rtl:space-x-reverse">
         <img src="/images/icon.png" class="h-8" alt="Flowbite Logo" />
@@ -88,33 +85,25 @@ echo "Nombre de likes : " . count($likes);
     </div>
 </header>
 
-
 <section class="bg-white py-8"> 
     <div class="container mx-auto px-4"> 
         <h2 class="text-3xl font-bold text-gray-800 mb-6 pt-20 text-center">Articles Disponibles</h2> 
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
              <?php 
-             $query = "SELECT articles.*, users.username, GROUP_CONCAT(tags.name SEPARATOR ', ') AS tags, 
-                            (SELECT COUNT(*) FROM likes WHERE article_id = articles.id) AS like_count
-                        FROM articles
-                        JOIN users ON articles.user_id = users.id
-                        LEFT JOIN article_tags ON articles.id = article_tags.article_id
-                        LEFT JOIN tags ON article_tags.tag_id = tags.id
-                        GROUP BY articles.id";
-             $result = $db->query($query);
+             $article = new Article($conn);
+             $articles = $article->getAllArticles($conn);
 
-             if ($result && $result->num_rows > 0) {
-                 while ($row = $result->fetch_assoc()) {
-                     // Variables protégées contre XSS
-                     $title = htmlspecialchars($row['title']);
-                     $content = htmlspecialchars($row['content']);
-                     $image = htmlspecialchars($row['image']);
-                     $username = htmlspecialchars($row['username']);
-                     $created_at = htmlspecialchars($row['created_at']);
-                     $tags = !empty($row['tags']) ? htmlspecialchars($row['tags']) : '';
-                     $like_count = $row['like_count'];
-                     
+             foreach ($articles as $row) {
+                 // Variables protégées contre XSS
+                 $title = htmlspecialchars($row['title']);
+                 $content = htmlspecialchars($row['content']);
+                 $image = htmlspecialchars($row['image']);
+                 $username = htmlspecialchars($row['username']);
+                 $created_at = htmlspecialchars($row['created_at']);
+                 $tags = !empty($row['tags']) ? htmlspecialchars($row['tags']) : '';
+                 $like_count = $row['like_count'];
 
+                 // Affichage
              ?>
                     <div class="bg-gray-100 rounded-lg shadow-md p-4">
                         <div class="flex justify-between">
@@ -145,15 +134,11 @@ echo "Nombre de likes : " . count($likes);
                         </div>
                     </div>
                 <?php
-                }
-            } else {
-                echo "<p>Aucun article trouvé.</p>";
-            }
-            ?>
+             }
+             ?>
         </div>
     </div>
 </section>
-
 <script>
     const menu = document.getElementById("burger-icon");
     const sidebar = document.getElementById("sidebar");

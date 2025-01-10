@@ -1,33 +1,25 @@
 <?php
 class Database {
-    private $servername = "localhost";
+    private $host = "localhost";
+    private $db_name = "blogOOP";
     private $username = "root";
-    private $password = "hamdi";
-    private $dbname = "blogOOP";
-    public $conn;
+    private $password = "";
+    private $conn;
 
-    // Constructor to establish a database connection
-    public function __construct() {
-        $this->conn = new mysqli($this->servername, $this->username, $this->password, $this->dbname);
+    public function connect() {
+        $this->conn = null;
 
-        if ($this->conn->connect_error) {
-            die("Connection failed: " . $this->conn->connect_error);
+        try {
+            $this->conn = new mysqli($this->host, $this->username, $this->password, $this->db_name);
+            if ($this->conn->connect_error) {
+                die("Connection failed: " . $this->conn->connect_error);
+            }
+        } catch (Exception $e) {
+            echo "Error: " . $e->getMessage();
         }
-    }
 
-    // Execute a query and return the result
-    public function query($sql) {
-        return $this->conn->query($sql);
-    }
-
-    // Prepare a statement for execution
-    public function prepare($sql) {
-        return $this->conn->prepare($sql);
-    }
-
-    // Close the database connection
-    public function close() {
-        $this->conn->close();
+        return $this->conn;
     }
 }
+
 ?>

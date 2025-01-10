@@ -1,8 +1,8 @@
 <?php
 class ArticleTags {
     private $db;
-    public $article_id;
-    public $tag_id;
+    private $article_id;
+    private $tag_id;
 
     // Constructor to initialize the database connection and optionally load an article-tag relationship by article_id and tag_id
     public function __construct($db, $article_id = null, $tag_id = null) {
@@ -12,6 +12,23 @@ class ArticleTags {
             $this->article_id = $article_id;
             $this->tag_id = $tag_id;
         }
+    }
+
+    // Getters and Setters
+    public function getArticleId() {
+        return $this->article_id;
+    }
+
+    public function setArticleId($article_id) {
+        $this->article_id = $article_id;
+    }
+
+    public function getTagId() {
+        return $this->tag_id;
+    }
+
+    public function setTagId($tag_id) {
+        $this->tag_id = $tag_id;
     }
 
     // Add a tag to an article

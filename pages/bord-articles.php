@@ -1,31 +1,24 @@
 <?php
 session_start();
-$userLoggedIn = isset($_SESSION['user_id']); 
+require_once 'classes/Database.php';
+require_once 'classes/Admin.php';
+require_once 'classes/Article.php';
 
+$db = new Database();
+$conn = $db->connect();
+
+// Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php'); 
+    header('Location: login.php');
     exit;
 }
 
-include("../includes/db.php");
+$userLoggedIn = true;
+$userId = $_SESSION['user_id'];
 
-$sql = "SELECT articles.id, articles.title, articles.content, users.username 
-        FROM articles 
-        JOIN users ON articles.user_id = users.id";
-$result = mysqli_query($conn, $sql);
-
-if ($userLoggedIn) {
-    $userId = $_SESSION['user_id'];
-
-    $sql = "SELECT role_id FROM users WHERE id = $userId";
-    $result = $conn->query($sql);
-    $role = null;
-    
-    if ($result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        $role = $row['role_id']; 
-    }
-}
+$admin = new Admin($conn);
+$articles = Article::getAllArticles($conn);
+$role = $admin->getUserRole($userId);
 ?>
 
 <!DOCTYPE html>
@@ -133,48 +126,23 @@ if ($userLoggedIn) {
         </thead>
         <tbody>
             <?php
-            $query = "
-                SELECT 
-                    articles.id, 
-                    articles.title, 
-                    articles.content, 
-                    users.username,
-                    COUNT(likes.id) AS like_count
-                FROM 
-                    articles
-                LEFT JOIN 
-                    users ON articles.user_id = users.id
-                LEFT JOIN 
-                    likes ON articles.id = likes.article_id
-                GROUP BY 
-                    articles.id
-            ";
-
-            $result = mysqli_query($conn, $query);
-
-            if (mysqli_num_rows($result) > 0) {
-                while ($row = mysqli_fetch_assoc($result)) {
-                    echo '<tr class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700">';
-                    echo '<td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">' . $row['title'] . '</td>';
-                    echo '<td class="px-6 py-4">' . substr($row['content'], 0, 100) . '...</td>';
-                    echo '<td class="px-6 py-4">' . $row['username'] . '</td>';
-                    echo '<td class="px-6 py-4">' . $row['like_count'] . ' likes</td>'; // Affichage du nombre de likes
-                    echo '<td class="px-6 py-4"><a href="view-or-manage-comments.php?article_id=' . $row['id'] . '" class="text-blue-600 hover:underline">View or Manage Comments</a></td>'; // Lien pour voir ou gérer les commentaires
-                    echo '<td class="px-6 py-4">';
-                    echo '<a href="delete-article.php?delete_article_id=' . $row['id'] . '" class="font-medium text-red-600 hover:underline">Delete</a>';
-                    echo '</td>';
-                    echo '</tr>';
-                }
-            } else {
-                echo '<tr><td colspan="5" class="text-center px-6 py-4">No articles found</td></tr>';
+            foreach ($articles as $article) {
+                echo '<tr class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700">';
+                echo '<td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">' . htmlspecialchars($article['title']) . '</td>';
+                echo '<td class="px-6 py-4">' . htmlspecialchars(substr($article['content'], 0, 100)) . '...</td>';
+                echo '<td class="px-6 py-4">' . htmlspecialchars($article['username']) . '</td>';
+                echo '<td class="px-6 py-4">' . htmlspecialchars($article['like_count']) . ' likes</td>';
+                echo '<td class="px-6 py-4"><a href="view-or-manage-comments.php?article_id=' . $article['id'] . '" class="text-blue-600 hover:underline">View or Manage Comments</a></td>';
+                echo '<td class="px-6 py-4">';
+                echo '<a href="delete-article.php?delete_article_id=' . $article['id'] . '" class="font-medium text-red-600 hover:underline">Delete</a>';
+                echo '</td>';
+                echo '</tr>';
             }
             ?>
         </tbody>
     </table>
-
         </div>
     </main>
 </div>
-
 </body>
 </html>

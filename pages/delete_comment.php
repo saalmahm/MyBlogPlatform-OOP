@@ -1,7 +1,12 @@
 <?php
-include('../includes/db.php');
 session_start();
+require_once '/classes/Database.php';
+require_once '/classes/Comment.php';
 
+$db = new Database();
+$conn = $db->connect();
+
+// Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
@@ -10,14 +15,12 @@ if (!isset($_SESSION['user_id'])) {
 $comment_id = $_GET['id'];
 $user_id = $_SESSION['user_id'];
 
-$query = "DELETE FROM comments WHERE id = ? AND user_id = ?";
-$stmt = $conn->prepare($query);
-$stmt->bind_param("ii", $comment_id, $user_id);
-
-if ($stmt->execute()) {
+// Supprimer le commentaire en utilisant la classe Comment
+$comment = new Comment($conn);
+if ($comment->deleteComment($comment_id, $user_id)) {
     header('Location: manage_comments.php');
     exit;
 } else {
-    echo "Error deleting comment: " . $stmt->error;
+    echo "Error deleting comment.";
 }
 ?>

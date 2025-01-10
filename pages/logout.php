@@ -1,16 +1,13 @@
 <?php
 session_start();
-
-require_once '/classes/Database.php'; 
-require_once '/classes/Authentication.php';  
+require_once '/classes/Database.php';
+require_once '/classes/Authentification.php';
 
 $db = new Database();
-$conn = $db->conn;
+$conn = $db->connect();
 
-// Passer la connexion à la classe Authentication
-$auth = new Authentication($conn); 
-
+$auth = new Authentification($conn);
 $auth->logout();
+
 header('Location: ./login.php');
-exit;
 ?>

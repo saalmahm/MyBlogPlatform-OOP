@@ -1,113 +1,125 @@
 <?php
-require_once 'User.php';
+class Admin {
+    private $conn;
 
-class Admin extends User {
-    // Method to add a new tag
-    public function addTag($name) {
-        $sql = "INSERT INTO tags (name) VALUES (:name)";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':name', $name);
-        return $stmt->execute();
+    // Constructeur qui prend la connexion à la base de données
+    public function __construct($conn) {
+        $this->conn = $conn;
     }
 
-    // Method to delete a tag
-    public function deleteTag($tag_id) {
-        $sql = "DELETE FROM tags WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':id', $tag_id);
-        return $stmt->execute();
+    // Méthode pour obtenir un utilisateur par son ID
+    public function getUserById($userId) {
+        $sql = "SELECT * FROM users WHERE id=?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        return $result->fetch_assoc(); // Retourne l'utilisateur trouvé
     }
 
-    // Method to modify a tag
-    public function modifyTag($tag_id, $newName) {
-        $sql = "UPDATE tags SET name = :name WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':name', $newName);
-        $stmt->bindParam(':id', $tag_id);
-        return $stmt->execute();
+    // Méthode pour obtenir tous les rôles
+    public function getRoles() {
+        $sql = "SELECT * FROM roles";
+        $result = $this->conn->query($sql);
+        return $result->fetch_all(MYSQLI_ASSOC); // Retourne tous les rôles
     }
 
-    // Method to view all tags
-    public function viewTags() {
-        $sql = "SELECT * FROM tags";
-        $stmt = $this->db->query($sql);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Méthode pour mettre à jour le rôle d'un utilisateur
+    public function updateUserRole($userId, $roleId) {
+        $sql = "UPDATE users SET role_id=? WHERE id=?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("ii", $roleId, $userId);
+        return $stmt->execute(); // Retourne true si la mise à jour réussit
     }
 
-    // Method to view all users
-    public function viewUsers() {
-        $sql = "SELECT * FROM users";
-        $stmt = $this->db->query($sql);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Méthode pour obtenir un tag par son ID
+    public function getTagById($tagId) {
+        $sql = "SELECT * FROM tags WHERE id=?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $tagId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        return $result->fetch_assoc(); // Retourne le tag trouvé
     }
 
-    // Method to delete a user
-    public function deleteUser($user_id) {
-        $sql = "DELETE FROM users WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':id', $user_id);
-        return $stmt->execute();
+    // Méthode pour mettre à jour le nom d'un tag
+    public function updateTagName($tagId, $tagName) {
+        $sql = "UPDATE tags SET name=? WHERE id=?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("si", $tagName, $tagId);
+        return $stmt->execute(); // Retourne true si la mise à jour réussit
     }
 
-    // Method to modify user role
-    public function modifyUserRole($user_id, $newRole) {
-        $sql = "UPDATE users SET role_id = :role_id WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':role_id', $newRole);
-        $stmt->bindParam(':id', $user_id);
-        return $stmt->execute();
-    }
-
-    // Method to view all articles
-    public function viewArticles() {
-        $sql = "SELECT * FROM articles";
-        $stmt = $this->db->query($sql);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    // Method to delete any article
-    public function deleteAnyArticle($article_id) {
-        $sql = "DELETE FROM articles WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':id', $article_id);
-        return $stmt->execute();
-    }
-
-    // Method to view statistics
-    public function viewStatistics() {
-        $statistics = [];
-
-        // Get total articles
+    // Méthode pour obtenir le nombre total d'articles
+    public function getTotalArticles() {
         $sql = "SELECT COUNT(*) AS total_articles FROM articles";
-        $stmt = $this->db->query($sql);
-        $statistics['total_articles'] = $stmt->fetch(PDO::FETCH_ASSOC)['total_articles'];
+        $result = $this->conn->query($sql);
+        if ($result) {
+            return $result->fetch_assoc()['total_articles'];
+        }
+        return 0; 
+    }
 
-        // Get total users
+    // Méthode pour obtenir le nombre total d'utilisateurs
+    public function getTotalUsers() {
         $sql = "SELECT COUNT(*) AS total_users FROM users";
-        $stmt = $this->db->query($sql);
-        $statistics['total_users'] = $stmt->fetch(PDO::FETCH_ASSOC)['total_users'];
-
-        // Get total tags
-        $sql = "SELECT COUNT(*) AS total_tags FROM tags";
-        $stmt = $this->db->query($sql);
-        $statistics['total_tags'] = $stmt->fetch(PDO::FETCH_ASSOC)['total_tags'];
-
-        return $statistics;
+        $result = $this->conn->query($sql);
+        if ($result) {
+            return $result->fetch_assoc()['total_users'];
+        }
+        return 0; 
     }
 
-    // Method to view all comments
-    public function viewComments() {
-        $sql = "SELECT * FROM comments";
-        $stmt = $this->db->query($sql);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Méthode pour obtenir le nombre total de tags
+    public function getTotalTags() {
+        $sql = "SELECT COUNT(DISTINCT tag_id) AS total_tags FROM article_tags";
+        $result = $this->conn->query($sql);
+        if ($result) {
+            return $result->fetch_assoc()['total_tags'];
+        }
+        return 0; 
     }
 
-    // Method to delete any comment
-    public function deleteComment($comment_id) {
-        $sql = "DELETE FROM comments WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':id', $comment_id);
-        return $stmt->execute();
+    // Méthode pour récupérer les commentaires d'un article
+    public function getCommentsByArticle($articleId) {
+        $comment = new Comment($this->conn);
+        return $comment->getCommentsByArticle($articleId);
     }
+
+    // Méthode pour supprimer un commentaire
+    public function deleteComment($commentId) {
+        $comment = new Comment($this->conn);
+        return $comment->deleteComment($commentId);
+    }
+
+    // Méthode pour obtenir le rôle d'un utilisateur
+    public function getUserRole($userId) {
+        $sql = "SELECT role_id FROM users WHERE id = $userId";
+        $result = $this->conn->query($sql);
+        if ($result && $result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            return $row['role_id'];
+        }
+        return null; 
+    }
+
+    public function getCommentByIdAndUser($commentId, $userId) {
+        $sql = "SELECT * FROM comments WHERE id = ? AND user_id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("ii", $commentId, $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        return $result->fetch_assoc(); // Retourne le commentaire trouvé
+    }
+
+    // Méthode pour mettre à jour un commentaire
+    public function updateComment($commentId, $newContent) {
+        $sql = "UPDATE comments SET content = ? WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("si", $newContent, $commentId);
+        return $stmt->execute(); // Retourne true si la mise à jour réussit
+    }
+    
 }
+
 ?>

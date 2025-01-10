@@ -1,83 +1,102 @@
 <?php
+
 class Comment {
-    private $db;
-    public $id;
-    public $content;
-    public $user_id;
-    public $article_id;
-    public $created_at;
+    private $conn;
+    private $table = 'comments';
+    
+    private $id;
+    private $article_id;
+    private $user_id;
+    private $content;
+    private $created_at;
+    private $username;
 
-    // Constructor to initialize the database connection and optionally load a comment by id
-    public function __construct($db, $id = null) {
-        $this->db = $db;
+    // Constructeur
+    public function __construct($db) {
+        $this->conn = $db;
+    }
 
-        if ($id) {
-            $this->loadCommentById($id);
+    // Setter pour les propriétés
+    public function setAttributes($id, $article_id, $user_id, $content, $created_at, $username) {
+        $this->id = $id;
+        $this->article_id = $article_id;
+        $this->user_id = $user_id;
+        $this->content = $content;
+        $this->created_at = $created_at;
+        $this->username = $username;
+    }
+
+    // Récupérer les commentaires d'un article
+    public function getCommentsByArticle($article_id) {
+        $query = "
+            SELECT 
+                comments.id AS comment_id, 
+                comments.article_id,
+                comments.user_id,
+                comments.content AS comment_content, 
+                comments.created_at AS comment_created_at, 
+                users.username AS comment_author
+            FROM 
+                comments
+            LEFT JOIN 
+                users ON comments.user_id = users.id
+            WHERE 
+                comments.article_id = ?
+        ";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param('i', $article_id);
+        $stmt->execute();
+
+        $result = $stmt->get_result();
+        $comments = [];
+
+        while ($row = $result->fetch_assoc()) {
+            $comment = new Comment($this->conn);
+            $comment->setAttributes(
+                $row['comment_id'], 
+                $row['article_id'], 
+                $row['user_id'], 
+                $row['comment_content'], 
+                $row['comment_created_at'], 
+                $row['comment_author']
+            );
+            $comments[] = $comment;
         }
+
+        return $comments;
     }
 
-    // Load a comment by its id
-    public function loadCommentById($id) {
-        $sql = "SELECT * FROM comments WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':id', $id);
-        $stmt->execute();
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        $this->id = $result['id'];
-        $this->content = $result['content'];
-        $this->user_id = $result['user_id'];
-        $this->article_id = $result['article_id'];
-        $this->created_at = $result['created_at'];
-    }
-
-    // Create a new comment
-    public function createComment($content, $user_id, $article_id) {
-        $sql = "INSERT INTO comments (content, user_id, article_id) VALUES (:content, :user_id, :article_id)";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':content', $content);
-        $stmt->bindParam(':user_id', $user_id);
-        $stmt->bindParam(':article_id', $article_id);
+    // Ajouter un commentaire
+    public function addComment($article_id, $user_id, $content) {
+        $query = "INSERT INTO comments (article_id, user_id, content) VALUES (?, ?, ?)";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param('iis', $article_id, $user_id, $content);
         return $stmt->execute();
     }
 
-    // Update an existing comment
-    public function updateComment($content) {
-        $sql = "UPDATE comments SET content = :content WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':content', $content);
-        $stmt->bindParam(':id', $this->id);
+    // Mettre à jour un commentaire
+    public function updateComment($comment_id, $content) {
+        $query = "UPDATE comments SET content = ? WHERE id = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param('si', $content, $comment_id);
         return $stmt->execute();
     }
 
-    // Delete a comment
-    public function deleteComment() {
-        $sql = "DELETE FROM comments WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':id', $this->id);
+    // Supprimer un commentaire
+    public function deleteComment($comment_id) {
+        $query = "DELETE FROM comments WHERE id = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param('i', $comment_id);
         return $stmt->execute();
     }
 
-    // Get all comments for a specific article
-    public static function getAllCommentsForArticle($db, $article_id) {
-        $sql = "SELECT comments.*, users.username FROM comments
-                JOIN users ON comments.user_id = users.id
-                WHERE comments.article_id = :article_id";
-        $stmt = $db->prepare($sql);
-        $stmt->bindParam(':article_id', $article_id);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    // Get all comments made by a specific user
-    public static function getAllCommentsByUser($db, $user_id) {
-        $sql = "SELECT comments.*, articles.title AS article_title FROM comments
-                JOIN articles ON comments.article_id = articles.id
-                WHERE comments.user_id = :user_id";
-        $stmt = $db->prepare($sql);
-        $stmt->bindParam(':user_id', $user_id);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
+    // Accesseurs pour les propriétés
+    public function getId() { return $this->id; }
+    public function getArticleId() { return $this->article_id; }
+    public function getUserId() { return $this->user_id; }
+    public function getContent() { return $this->content; }
+    public function getCreatedAt() { return $this->created_at; }
+    public function getUsername() { return $this->username; }
 }
 ?>

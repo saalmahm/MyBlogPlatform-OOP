@@ -53,12 +53,41 @@ class Article {
         return $stmt->execute();
     }
 
-    // Delete an article
+    // Delete an article and its associated tags, likes, and comments
     public function deleteArticle() {
-        $sql = "DELETE FROM articles WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':id', $this->id);
-        return $stmt->execute();
+        try {
+            $this->db->beginTransaction();
+
+            // Delete tags associated with the article
+            $sql = "DELETE FROM article_tags WHERE article_id = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':id', $this->id);
+            $stmt->execute();
+
+            // Delete likes associated with the article
+            $sql = "DELETE FROM likes WHERE article_id = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':id', $this->id);
+            $stmt->execute();
+
+            // Delete comments associated with the article
+            $sql = "DELETE FROM comments WHERE article_id = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':id', $this->id);
+            $stmt->execute();
+
+            // Delete the article itself
+            $sql = "DELETE FROM articles WHERE id = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':id', $this->id);
+            $stmt->execute();
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            return false;
+        }
     }
 
     // Add a tag to an article
@@ -92,5 +121,20 @@ class Article {
         $stmt = $db->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    public function getArticleWithTags($article_id) {
+        $sql = "
+            SELECT articles.*, GROUP_CONCAT(tags.name SEPARATOR ', ') AS tags 
+            FROM articles
+            LEFT JOIN article_tags ON articles.id = article_tags.article_id
+            LEFT JOIN tags ON article_tags.tag_id = tags.id
+            WHERE articles.id = :article_id
+            GROUP BY articles.id
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':article_id', $article_id);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    
 }
 ?>

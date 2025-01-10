@@ -1,53 +1,44 @@
 <?php
-include("../includes/db.php");
-
 session_start();
-$userLoggedIn = isset($_SESSION['user_id']); 
+require_once '/classes/Database.php';
+require_once '/classes/Admin.php';
+require_once '/classes/User.php';
 
+$db = new Database();
+$conn = $db->connect();
+
+// Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php'); 
+    header('Location: login.php');
     exit;
 }
 
+$userLoggedIn = true;
+$userId = $_SESSION['user_id'];
+
+// Obtenir le rôle de l'utilisateur
+$admin = new Admin($conn);
+$role = $admin->getUserRole($userId);
+
+// Supprimer un utilisateur et ses associations
 if (isset($_GET['delete_user_id'])) {
-    $user_id = $_GET['delete_user_id'];
-
-    if ($conn === null) {
-        die("La connexion à la base de données a échoué.");
-    }
-
-    $sql = "DELETE FROM likes WHERE user_id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-
-    $sql = "DELETE FROM comments WHERE user_id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-
-    $sql = "DELETE FROM articles WHERE user_id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-
-    $sql = "DELETE FROM users WHERE id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-
-}
-if ($userLoggedIn) {
-    $userId = $_SESSION['user_id'];
-
-    $sql = "SELECT role_id FROM users WHERE id = $userId";
-    $result = $conn->query($sql);
-    $role = null;
+    $deleteUserId = $_GET['delete_user_id'];
     
-    if ($result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        $role = $row['role_id']; 
-    }
+    // Supprimer les likes associés
+    $like = new Like($conn);
+    $like->removeLike($deleteUserId, $article_id); // Suppression de tous les likes de l'utilisateur
+
+    // Supprimer les commentaires associés
+    $comment = new Comment($conn);
+    $comment->deleteComment($deleteUserId); // Suppression de tous les commentaires de l'utilisateur
+
+    // Supprimer les articles associés
+    $article = new Article($conn);
+    $article->deleteArticleByUser($deleteUserId); // Suppression de tous les articles de l'utilisateur
+
+    // Supprimer l'utilisateur
+    $user = new User($conn, $deleteUserId);
+    $user->deleteUser();
 }
 ?>
 
@@ -146,27 +137,17 @@ if ($userLoggedIn) {
                 </thead>
                 <tbody>
                     <?php
-                    include ("../includes/db.php");
-
-                    $sql = "SELECT users.id, users.username, users.email, roles.name AS role_name 
-                            FROM users 
-                            JOIN roles ON users.role_id = roles.id";
-                    $result = mysqli_query($conn, $sql);
-
-                    if (mysqli_num_rows($result) > 0) {
-                        while ($row = mysqli_fetch_assoc($result)) {
-                            echo '<tr class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700">';
-                            echo '<td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">' . $row['username'] . '</td>';
-                            echo '<td class="px-6 py-4">' . $row['email'] . '</td>';
-                            echo '<td class="px-6 py-4">' . $row['role_name'] . '</td>';
-                            echo '<td class="px-6 py-4">';
-                            echo '<a href="edit-user.php?edit_user_id=' . $row['id'] . '" class="font-medium text-blue-600 hover:underline pr-4">Edit</a>';
-                            echo '<a href="?delete_user_id=' . $row['id'] . '" class="font-medium text-red-600 hover:underline">Delete</a>';
-                            echo '</td>';
-                            echo '</tr>';
-                        }
-                    } else {
-                        echo '<tr><td colspan="4" class="text-center px-6 py-4">No users found</td></tr>';
+                    $users = $admin->getAllUsers();
+                    foreach ($users as $user) {
+                        echo '<tr class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700">';
+                        echo '<td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">' . htmlspecialchars($user['username']) . '</td>';
+                        echo '<td class="px-6 py-4">' . htmlspecialchars($user['email']) . '</td>';
+                        echo '<td class="px-6 py-4">' . htmlspecialchars($user['role_name']) . '</td>';
+                        echo '<td class="px-6 py-4">';
+                        echo '<a href="edit-user.php?edit_user_id=' . $user['id'] . '" class="font-medium text-blue-600 hover:underline pr-4">Edit</a>';
+                        echo '<a href="?delete_user_id=' . $user['id'] . '" class="font-medium text-red-600 hover:underline">Delete</a>';
+                        echo '</td>';
+                        echo '</tr>';
                     }
                     ?>
                 </tbody>

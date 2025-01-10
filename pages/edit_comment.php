@@ -1,36 +1,44 @@
 <?php
-include('../includes/db.php');
 session_start();
 
+include("/classes/Database.php");
+include("/classes/Admin.php");
+
+// Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
 
+// Créer une instance de la classe Database et se connecter
+$database = new Database();
+$conn = $database->connect();
+
+// Créer une instance de la classe Admin
+$admin = new Admin($conn);
+
+// Récupérer le commentaire à modifier
 $comment_id = $_GET['id'];
 $user_id = $_SESSION['user_id'];
 
-$query = "SELECT * FROM comments WHERE id = $comment_id AND user_id = $user_id";
-$result = mysqli_query($conn, $query);
+// Utiliser la méthode de Admin pour récupérer le commentaire
+$comment = $admin->getCommentByIdAndUser($comment_id, $user_id);
 
-if (mysqli_num_rows($result) > 0) {
-    $comment = mysqli_fetch_assoc($result);
-} else {
+if (!$comment) {
     echo "Comment not found or you do not have permission to edit it.";
     exit;
 }
 
+// Mettre à jour le commentaire
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $new_content = $_POST['content'];
-    $updateQuery = "UPDATE comments SET content = ? WHERE id = ?";
-    $stmt = $conn->prepare($updateQuery);
-    $stmt->bind_param("si", $new_content, $comment_id);
-
-    if ($stmt->execute()) {
+    
+    // Utiliser la méthode de Admin pour mettre à jour le commentaire
+    if ($admin->updateComment($comment_id, $new_content)) {
         header('Location: manage_comments.php');
         exit;
     } else {
-        echo "Error updating comment: " . $stmt->error;
+        echo "Error updating comment.";
     }
 }
 ?>

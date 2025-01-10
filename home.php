@@ -1,24 +1,17 @@
 <?php
 session_start();
+require_once 'classes/Database.php';
+require_once 'classes/Admin.php';
+
+$db = new Database();
+$conn = $db->connect();
 $userLoggedIn = isset($_SESSION['user_id']);
 
 if ($userLoggedIn) {
     $userId = $_SESSION['user_id'];
     
-include("./includes/db.php");    
-    if ($conn->connect_error) {
-        die("Connection failed: " . $conn->connect_error);
-    }
-    
-    $sql = "SELECT role_id FROM users WHERE id = $userId";
-    $result = $conn->query($sql);
-    $role = null;
-    
-    if ($result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        $role = $row['role_id']; 
-    }
-    $conn->close();
+    $admin = new Admin($conn);
+    $role = $admin->getUserRole($userId);
 }
 ?>
 
@@ -80,7 +73,6 @@ include("./includes/db.php");
     </div>
 </header>
 
-
 <section class="bg-blue-600 text-white text-center py-20">
     <div class="container mx-auto px-4">
         <h1 class="text-4xl font-bold pt-10">Welcome to My Blog</h1>
@@ -88,7 +80,6 @@ include("./includes/db.php");
         <a href="index.php" class="inline-block mt-6 bg-white text-blue-600 py-3 px-6 rounded-full font-semibold hover:bg-gray-200 transition">Explore Articles</a>
     </div>
 </section>
-
 
 <section class="bg-gray-100 text-gray-900 py-16" id="about">
     <div class="container mx-auto px-4">
@@ -123,9 +114,6 @@ include("./includes/db.php");
         </div>
     </div>
 </section>
-
-
-
 
 <footer class="bg-white rounded-lg shadow dark:bg-gray-900 m-4">
     <div class="w-full max-w-screen-xl mx-auto p-4 md:py-8">
