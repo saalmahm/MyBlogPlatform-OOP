@@ -8,39 +8,41 @@ class Authentification {
 
     public function register($username, $email, $password) {
         $passwordHash = password_hash($password, PASSWORD_BCRYPT);
-        $checkQuery = "SELECT * FROM users WHERE email = ? OR username = ?";
+        $checkQuery = "SELECT * FROM users WHERE email = :email OR username = :username";
         $stmt = $this->conn->prepare($checkQuery);
-        $stmt->bind_param("ss", $email, $username);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':username', $username);
         $stmt->execute();
-        $result = $stmt->get_result();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($result->num_rows > 0) {
+        if ($result) {
             return "L'utilisateur existe déjà.";
         }
 
-        $insertQuery = "INSERT INTO users (username, email, password, role_id) VALUES (?, ?, ?, 2)";
+        $insertQuery = "INSERT INTO users (username, email, password, role_id) VALUES (:username, :email, :password, 2)";
         $stmt = $this->conn->prepare($insertQuery);
-        $stmt->bind_param("sss", $username, $email, $passwordHash);
+        $stmt->bindParam(':username', $username);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':password', $passwordHash);
 
         if ($stmt->execute()) {
             return true;
         } else {
-            return "Erreur lors de l'inscription : " . $stmt->error;
+            return "Erreur lors de l'inscription : " . $stmt->errorInfo()[2];
         }
     }
 
     public function login($usernameOrEmail, $password) {
-        $query = "SELECT * FROM users WHERE username = ? OR email = ?";
+        $query = "SELECT * FROM users WHERE username = :usernameOrEmail OR email = :usernameOrEmail";
         $stmt = $this->conn->prepare($query);
-        $stmt->bind_param("ss", $usernameOrEmail, $usernameOrEmail);
+        $stmt->bindParam(':usernameOrEmail', $usernameOrEmail);
         $stmt->execute();
-        $result = $stmt->get_result();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($result->num_rows > 0) {
-            $user = $result->fetch_assoc();
-            if (password_verify($password, $user['password'])) {
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['username'] = $user['username'];
+        if ($result) {
+            if (password_verify($password, $result['password'])) {
+                $_SESSION['user_id'] = $result['id'];
+                $_SESSION['username'] = $result['username'];
                 return true;
             } else {
                 return "Mot de passe incorrect.";

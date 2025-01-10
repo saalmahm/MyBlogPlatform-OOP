@@ -6,6 +6,10 @@ require_once 'classes/Like.php';
 
 $db = new Database();
 $conn = $db->connect();
+if (!$conn) {
+    die("Database connection failed!");
+}
+
 $userLoggedIn = isset($_SESSION['user_id']);
 
 if ($userLoggedIn && isset($_GET['like'])) {
@@ -92,6 +96,7 @@ if ($userLoggedIn) {
              <?php 
              $article = new Article($conn);
              $articles = $article->getAllArticles($conn);
+             
 
              foreach ($articles as $row) {
                  // Variables protégées contre XSS
@@ -103,7 +108,6 @@ if ($userLoggedIn) {
                  $tags = !empty($row['tags']) ? htmlspecialchars($row['tags']) : '';
                  $like_count = $row['like_count'];
 
-                 // Affichage
              ?>
                     <div class="bg-gray-100 rounded-lg shadow-md p-4">
                         <div class="flex justify-between">
