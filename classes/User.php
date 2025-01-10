@@ -13,31 +13,38 @@ class User {
 
     private function loadUserData() {
         $stmt = $this->conn->prepare("SELECT * FROM users WHERE id = ?");
-        $stmt->bind_param("i", $this->user_id);
+        $stmt->bindParam(1, $this->user_id, PDO::PARAM_INT);
         $stmt->execute();
-        $result = $stmt->get_result();
-        if ($result->num_rows > 0) {
-            $user = $result->fetch_assoc();
-            $this->username = $user['username'];
-            $this->role_id = $user['role_id'];
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($result) {
+            $this->username = $result['username'];
+            $this->role_id = $result['role_id'];
         }
+    }
+
+    public function getUserRole() {
+        return $this->role_id;
     }
 
     public function addArticle($title, $content, $tags, $image) {
         $stmt = $this->conn->prepare("INSERT INTO articles (title, content, image, user_id) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("sssi", $title, $content, $image, $this->user_id);
+        $stmt->bindParam(1, $title, PDO::PARAM_STR);
+        $stmt->bindParam(2, $content, PDO::PARAM_STR);
+        $stmt->bindParam(3, $image, PDO::PARAM_STR);
+        $stmt->bindParam(4, $this->user_id, PDO::PARAM_INT);
         if ($stmt->execute()) {
-            $article_id = $stmt->insert_id;
+            $article_id = $this->conn->lastInsertId();
             $this->addTagsToArticle($article_id, $tags);
         } else {
-            echo "Error: " . $stmt->error;
+            echo "Error: " . $stmt->errorInfo();
         }
     }
 
     private function addTagsToArticle($article_id, $tags) {
         $tag_stmt = $this->conn->prepare("INSERT INTO article_tags (article_id, tag_id) VALUES (?, ?)");
         foreach ($tags as $tag_id) {
-            $tag_stmt->bind_param("ii", $article_id, $tag_id);
+            $tag_stmt->bindParam(1, $article_id, PDO::PARAM_INT);
+            $tag_stmt->bindParam(2, $tag_id, PDO::PARAM_INT);
             $tag_stmt->execute();
         }
     }
@@ -46,21 +53,24 @@ class User {
         // Check if the user has already liked this article
         $checkLikeQuery = "SELECT * FROM likes WHERE user_id = ? AND article_id = ?";
         $stmt = $this->conn->prepare($checkLikeQuery);
-        $stmt->bind_param("ii", $this->user_id, $article_id);
+        $stmt->bindParam(1, $this->user_id, PDO::PARAM_INT);
+        $stmt->bindParam(2, $article_id, PDO::PARAM_INT);
         $stmt->execute();
-        $checkLikeResult = $stmt->get_result();
+        $checkLikeResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        if ($checkLikeResult->num_rows == 0) {
+        if (count($checkLikeResult) == 0) {
             // Add like
             $likeQuery = "INSERT INTO likes (user_id, article_id) VALUES (?, ?)";
             $stmt = $this->conn->prepare($likeQuery);
-            $stmt->bind_param("ii", $this->user_id, $article_id);
+            $stmt->bindParam(1, $this->user_id, PDO::PARAM_INT);
+            $stmt->bindParam(2, $article_id, PDO::PARAM_INT);
             $stmt->execute();
         } else {
             // Remove like
             $unlikeQuery = "DELETE FROM likes WHERE user_id = ? AND article_id = ?";
             $stmt = $this->conn->prepare($unlikeQuery);
-            $stmt->bind_param("ii", $this->user_id, $article_id);
+            $stmt->bindParam(1, $this->user_id, PDO::PARAM_INT);
+            $stmt->bindParam(2, $article_id, PDO::PARAM_INT);
             $stmt->execute();
         }
     }

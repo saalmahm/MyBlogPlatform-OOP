@@ -1,17 +1,13 @@
 <?php
-// Inclure les fichiers des classes Database et Admin
-include("/classes/Database.php");
-include("/classes/Admin.php");
-
+require_once '../classes/Database.php';
+require_once '../classes/Admin.php';
 session_start();
 
-// Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php'); 
     exit;
 }
 
-// Créer une instance de la classe Database et se connecter
 $database = new Database();
 $conn = $database->connect();
 

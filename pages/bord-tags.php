@@ -1,60 +1,42 @@
 <?php
-
 session_start();
+require_once '../classes/Database.php';
+require_once '../classes/Tag.php';
+require_once '../classes/User.php';
+
+$db = (new Database())->connect();
+$tag = new Tag($db);
 $userLoggedIn = isset($_SESSION['user_id']); 
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php'); 
+    header('Location: login.php');
     exit;
 }
 
 if (isset($_GET['delete_tag_id'])) {
     $tag_id = $_GET['delete_tag_id'];
-
-    if ($conn === null) {
-        die("La connexion à la base de données a échoué.");
-    }
-
-    $sql = "DELETE FROM article_tags WHERE tag_id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $tag_id);
-    $stmt->execute();
-
-    $sql = "DELETE FROM tags WHERE id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $tag_id);
-    $stmt->execute();
+    $tag->deleteTag($tag_id);
 }
 
-if($_SERVER["REQUEST_METHOD"]=="POST"){
-    $tagNam=$_POST['tag_name'];
-    $sql="insert into tags (name) values (?)";
-    $stmt=$conn->prepare($sql);
-    $stmt->bind_param("s", $tagNam);
-    $stmt->execute();
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $tagName = $_POST['tag_name'];
+    $tag->createTag($tagName);
 }
 
 if ($userLoggedIn) {
     $userId = $_SESSION['user_id'];
-
-    $sql = "SELECT role_id FROM users WHERE id = $userId";
-    $result = $conn->query($sql);
-    $role = null;
-    
-    if ($result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        $role = $row['role_id']; 
-    }
+    $user = new User($db, $userId);
+    $role = $user->getUserRole();
 }
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 font-sans">
 <header class="flex justify-between p-4">
@@ -153,7 +135,6 @@ if ($userLoggedIn) {
                 </thead>
                 <tbody>
                     <?php
-                    include ("../includes/db.php");
 
                     $sql = "SELECT * 
                             FROM tags ";
