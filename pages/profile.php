@@ -2,13 +2,13 @@
 session_start();
 
 // Inclure les classes
-include('/classes/Database.php');
-include('/classes/Authentification.php');
-include('/classes/Admin.php');
-include('/classes/Article.php');
-include('/classes/Tag.php');
-include('/classes/Like.php');
-include('/classes/ArticleTags.php');
+require_once '../classes/Database.php';
+require_once '../classes/Authentication.php';
+require_once '../classes/Admin.php';
+require_once '../classes/Article.php';
+require_once '../classes/Tag.php';
+require_once '../classes/Like.php';
+require_once '../classes/ArticleTags.php';
 
 // Connexion à la base de données
 $db = (new Database())->connect();
@@ -20,20 +20,22 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
+$userLoggedIn = isset($_SESSION['user_id']); 
 $auth = new Authentification($db);
-$admin = new Admin();
-$articleObj = new Article();
-$tagObj = new Tag();
-$likeObj = new Like();
-$articleTagsObj = new ArticleTags();
+$admin = new Admin($db);
+$articleObj = new Article($db);
+$tagObj = new Tag($db);
+$likeObj = new Like($db);
+$articleTagsObj = new ArticleTags($db);
 
-// Récupérer les informations de l'utilisateur
-$query = "SELECT username, role_id FROM users WHERE id = ?";
-$stmt = $db->prepare($query);
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$stmt->bind_result($username, $role_id);
-$stmt->fetch();
+// Récupérer les informations de l'utilisateur 
+$query = "SELECT username, role_id FROM users WHERE id = :user_id";
+ $stmt = $db->prepare($query);
+  $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT); 
+ $stmt->execute();
+  $result = $stmt->fetch(PDO::FETCH_ASSOC);
+   $username = $result['username']; 
+   $role_id = $result['role_id'];
 
 // Traitement des actions
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -75,15 +77,14 @@ $articles = $articleObj->getArticlesByUser($user_id);
 </head>
 <body>
 <header class="flex justify-between p-4 fixed top-0 left-0 right-0 bg-white shadow-md z-50">
-<a href="/home.php" class="flex items-center mb-4 sm:mb-0 space-x-3 rtl:space-x-reverse">
+    <a href="/home.php" class="flex items-center mb-4 sm:mb-0 space-x-3 rtl:space-x-reverse">
         <img src="/images/icon.png" class="h-8" alt="Flowbite Logo" />
-        <span class="text-2xl font-bold whitespace-nowrap dark:text-gray-500"> MyBlogPlatform</span>
+        <span class="text-2xl font-bold whitespace-nowrap dark:text-gray-500">MyBlogPlatform</span>
     </a>
     <div class="lg:hidden" id="burger-icon">
         <img src="/images/menu.png" alt="Menu">
     </div>
-    <div id="sidebar"
-        class="shadow-xl fixed top-0 right-0 w-1/3 h-full bg-gray-200 z-50 transform translate-x-full duration-300">
+    <div id="sidebar" class="shadow-xl fixed top-0 right-0 w-1/3 h-full bg-gray-200 z-50 transform translate-x-full duration-300">
         <div class="flex justify-end p-4">
             <button id="close-sidebar" class="text-3xl">X</button>
         </div>
@@ -91,10 +92,10 @@ $articles = $articleObj->getArticlesByUser($user_id);
             <a href="/home.php" class="text-black text-lg">Home</a>
             <a href="/index.php" class="text-black text-lg">Blog</a>
             <?php if ($userLoggedIn): ?>
-                <?php if ($role == 1): ?> <!-- Admin role -->
+                <?php if ($role_id == 1): ?> <!-- Admin role -->
                     <a href="/pages/dashboard.php" class="text-black text-lg">Dashboard</a>
                 <?php endif; ?>
-                <?php if ($role == 2): ?> <!-- User role -->
+                <?php if ($role_id == 2): ?> <!-- User role -->
                     <a href="/pages/profile.php" class="text-black text-lg">Profile</a>
                 <?php endif; ?>
                 <a href="/pages/logout.php" class="text-red-500 text-lg">Log out</a>
@@ -105,26 +106,16 @@ $articles = $articleObj->getArticlesByUser($user_id);
     </div>
     <div class="hidden lg:flex justify-center space-x-4">
         <ul class="flex items-center text-sm font-medium text-gray-400 mb-0">
-            <li>
-                <a href="/home.php" class="hover:underline me-4 md:me-6">Home</a>
-            </li>
-            <li>
-                <a href="/index.php" class="hover:underline me-4 md:me-6">Blog</a>
-            </li>
+            <li><a href="/home.php" class="hover:underline me-4 md:me-6">Home</a></li>
+            <li><a href="/index.php" class="hover:underline me-4 md:me-6">Blog</a></li>
             <?php if ($userLoggedIn): ?>
-                <?php if ($role == 1): ?> <!-- Admin role -->
-                    <li>
-                        <a href="/pages/dashboard.php" class="hover:underline me-4 md:me-6">Dashboard</a>
-                    </li>
+                <?php if ($role_id == 1): ?> <!-- Admin role -->
+                    <li><a href="/pages/dashboard.php" class="hover:underline me-4 md:me-6">Dashboard</a></li>
                 <?php endif; ?>
-                <?php if ($role == 2): ?> <!-- User role -->
-                    <li>
-                        <a href="/pages/profile.php" class="hover:underline me-4 md:me-6">Profile</a>
-                    </li>
+                <?php if ($role_id == 2): ?> <!-- User role -->
+                    <li><a href="/pages/profile.php" class="hover:underline me-4 md:me-6">Profile</a></li>
                 <?php endif; ?>
-                <li>
-                    <a href="/pages/logout.php" class="text-red-500 hover:underline me-4 md:me-6">Log out</a>
-                </li>
+                <li><a href="/pages/logout.php" class="text-red-500 hover:underline me-4 md:me-6">Log out</a></li>
             <?php else: ?>
                 <li>
                     <a href="/pages/signup.php" class="text-white bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 me-4 md:me-6">Sign Up</a>
@@ -133,6 +124,7 @@ $articles = $articleObj->getArticlesByUser($user_id);
         </ul>
     </div>
 </header>
+
 <section class="bg-gradient-to-r from-blue-200 via-blue-300 to-blue-400 py-8 relative flex justify-between items-center mt-20 rounded-lg shadow-lg">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full px-6">
         <h1 class="text-4xl sm:text-5xl font-bold text-gray-800 mb-4 sm:mb-0">

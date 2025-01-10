@@ -1,8 +1,9 @@
 <?php
 session_start();
-require_once 'classes/Database.php';
-require_once 'classes/Article.php';
-require_once 'classes/Like.php';
+require_once './classes/Database.php';
+require_once './classes/Article.php';
+require_once './classes/Like.php';
+require_once './classes/Admin.php';
 
 $db = new Database();
 $conn = $db->connect();
@@ -27,8 +28,8 @@ if ($userLoggedIn && isset($_GET['like'])) {
 if ($userLoggedIn) {
     $userId = $_SESSION['user_id'];
 
-    $admin = new Admin($conn);
-    $role = $admin->getUserRole($userId);
+    $admin = new Admin($conn); 
+       $role = $admin->getUserRole($userId);
 }
 ?>
 <!DOCTYPE html>

@@ -136,5 +136,10 @@ class Article {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
     
-}
+    public function getArticlesByUser($user_id) { 
+        $sql = "SELECT * FROM articles WHERE user_id = :user_id"; 
+        $stmt = $this->db->prepare($sql); 
+        $stmt->bindParam(':user_id', $user_id);
+         $stmt->execute(); return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}}
 ?>

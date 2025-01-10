@@ -93,15 +93,13 @@ class Admin {
     }
 
     // Méthode pour obtenir le rôle d'un utilisateur
-    public function getUserRole($userId) {
-        $sql = "SELECT role_id FROM users WHERE id = $userId";
-        $result = $this->conn->query($sql);
-        if ($result && $result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            return $row['role_id'];
-        }
-        return null; 
-    }
+    public function getUserRole($userId) { 
+        $sql = "SELECT role_id FROM users WHERE id = ?";
+         $stmt = $this->conn->prepare($sql);
+          $stmt->bindParam(1, $userId, PDO::PARAM_INT); 
+          $stmt->execute();
+           $row = $stmt->fetch(PDO::FETCH_ASSOC); 
+           return $row ? $row['role_id'] : null; }
 
     public function getCommentByIdAndUser($commentId, $userId) {
         $sql = "SELECT * FROM comments WHERE id = ? AND user_id = ?";
@@ -118,6 +116,13 @@ class Admin {
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param("si", $newContent, $commentId);
         return $stmt->execute(); // Retourne true si la mise à jour réussit
+    }
+    
+    public function getAllUsers() {
+        $sql = "SELECT users.id, users.username, users.email, roles.name AS role_name FROM users 
+                JOIN roles ON users.role_id = roles.id";
+        $result = $this->conn->query($sql);
+        return $result->fetchAll(PDO::FETCH_ASSOC);
     }
     
 }

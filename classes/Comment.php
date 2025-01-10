@@ -90,7 +90,11 @@ class Comment {
         $stmt->bind_param('i', $comment_id);
         return $stmt->execute();
     }
-
+    public function getCommentsByUser($user_id) { 
+        $query = "SELECT comments.id, comments.content, articles.title FROM comments JOIN articles ON comments.article_id = articles.id WHERE comments.user_id = :user_id";
+         $stmt = $this->conn->prepare($query); $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT); $stmt->execute();
+          return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
     // Accesseurs pour les propriétés
     public function getId() { return $this->id; }
     public function getArticleId() { return $this->article_id; }

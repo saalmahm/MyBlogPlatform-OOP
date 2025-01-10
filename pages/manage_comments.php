@@ -1,8 +1,7 @@
 <?php
 session_start();
-require_once '/classes/Database.php';
-require_once '/classes/Comment.php';
-
+require_once '../classes/Database.php';
+require_once '../classes/Comment.php';
 $db = new Database();
 $conn = $db->connect();
 

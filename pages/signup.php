@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $result = $auth->register($username, $email, $password);
 
     if ($result === true) {
-        header("Location:./login.php");
+        header("Location: ./login.php");
         exit;
     } else {
         echo $result; // Afficher le message d'erreur
