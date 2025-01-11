@@ -54,8 +54,8 @@ class Admin {
     public function getTotalArticles() {
         $sql = "SELECT COUNT(*) AS total_articles FROM articles";
         $stmt = $this->conn->query($sql);
-        if ($result) {
-            return $result->fetch(PDO::FETCH_ASSOC)['total_articles'];
+        if ($stmt) {
+            return $stmt->fetch(PDO::FETCH_ASSOC)['total_articles'];
         }
         return 0; 
     }
@@ -64,8 +64,8 @@ class Admin {
     public function getTotalUsers() {
         $sql = "SELECT COUNT(*) AS total_users FROM users";
         $stmt = $this->conn->query($sql);
-        if ($result) {
-            return $result->fetch(PDO::FETCH_ASSOC)['total_users'];
+        if ($stmt) {
+            return $stmt->fetch(PDO::FETCH_ASSOC)['total_users'];
         }
         return 0; 
     }
@@ -74,8 +74,8 @@ class Admin {
     public function getTotalTags() {
         $sql = "SELECT COUNT(DISTINCT tag_id) AS total_tags FROM article_tags";
         $stmt = $this->conn->query($sql);
-        if ($result) {
-            return $result->fetch(PDO::FETCH_ASSOC)['total_tags'];
+        if ($stmt) {
+            return $stmt->fetch(PDO::FETCH_ASSOC)['total_tags'];
         }
         return 0; 
     }

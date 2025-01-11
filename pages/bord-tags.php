@@ -136,13 +136,13 @@ if ($userLoggedIn) {
                 <tbody>
                     <?php
 
-                    $sql = "SELECT * 
-                            FROM tags ";
-                    $result = mysqli_query($conn, $sql);
+                    $sql = "SELECT * FROM tags ";
+                    $stmt = $db->prepare($sql);
+                    $stmt->execute();
+                    $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-                    if (mysqli_num_rows($result) > 0) {
-                        while ($row = mysqli_fetch_assoc($result)) {
-                            echo '<tr class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700">';
+                    if (count($result) > 0) {
+                        foreach ($result as $row) {                            echo '<tr class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700">';
                             echo '<td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">' . $row['name'] . '</td>';
                             echo '<td class="px-6 py-4 flex text-center">';
                             echo '<a href="edit-tag.php?edit_tag_id=' . $row['id'] . '" class="font-medium text-blue-600 hover:underline pr-6">Edit</a>';
