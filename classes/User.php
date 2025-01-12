@@ -5,13 +5,13 @@ class User {
     protected $username;
     protected $role_id;
 
-    protected function __construct($conn, $user_id) {
+    public function __construct($conn, $user_id) {
         $this->conn = $conn;
         $this->user_id = $user_id;
         $this->loadUserData();
     }
 
-    protected function loadUserData() {
+    private function loadUserData() {
         $stmt = $this->conn->prepare("SELECT * FROM users WHERE id = ?");
         $stmt->bindParam(1, $this->user_id, PDO::PARAM_INT);
         $stmt->execute();
@@ -22,11 +22,11 @@ class User {
         }
     }
 
-    protected function getUserRole() {
+    public function getUserRole() {
         return $this->role_id;
     }
 
-    protected function addArticle($title, $content, $tags, $image) {
+    public function addArticle($title, $content, $tags, $image) {
         $stmt = $this->conn->prepare("INSERT INTO articles (title, content, image, user_id) VALUES (?, ?, ?, ?)");
         $stmt->bindParam(1, $title, PDO::PARAM_STR);
         $stmt->bindParam(2, $content, PDO::PARAM_STR);
@@ -40,7 +40,7 @@ class User {
         }
     }
 
-    protected function addTagsToArticle($article_id, $tags) {
+    private function addTagsToArticle($article_id, $tags) {
         $tag_stmt = $this->conn->prepare("INSERT INTO article_tags (article_id, tag_id) VALUES (?, ?)");
         foreach ($tags as $tag_id) {
             $tag_stmt->bindParam(1, $article_id, PDO::PARAM_INT);
@@ -49,7 +49,7 @@ class User {
         }
     }
 
-    protected function likeOrUnlikeArticle($article_id) {
+    public function likeOrUnlikeArticle($article_id) {
         // Check if the user has already liked this article
         $checkLikeQuery = "SELECT * FROM likes WHERE user_id = ? AND article_id = ?";
         $stmt = $this->conn->prepare($checkLikeQuery);
@@ -75,5 +75,4 @@ class User {
         }
     }
 }
-
 ?>
