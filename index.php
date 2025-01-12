@@ -16,7 +16,7 @@ $userLoggedIn = isset($_SESSION['user_id']);
 if ($userLoggedIn && isset($_GET['like'])) {
     $article_id = $_GET['like'];
     $user_id = $_SESSION['user_id'];
-    
+
     $like = new Like($conn);
     $like->toggleLike($user_id, $article_id); 
 }
@@ -25,7 +25,7 @@ if ($userLoggedIn) {
     $userId = $_SESSION['user_id'];
 
     $admin = new Admin($conn); 
-       $role = $admin->getUserRole($userId);
+    $role = $admin->getUserRole($userId);
 }
 ?>
 <!DOCTYPE html>
@@ -93,7 +93,7 @@ if ($userLoggedIn) {
              <?php 
              $article = new Article($conn);
              $articles = $article->getAllArticles($conn);
-             
+             $like = new Like($conn);
 
              foreach ($articles as $row) {
                  // Variables protégées contre XSS
@@ -103,7 +103,7 @@ if ($userLoggedIn) {
                  $username = htmlspecialchars($row['username']);
                  $created_at = htmlspecialchars($row['created_at']);
                  $tags = !empty($row['tags']) ? htmlspecialchars($row['tags']) : '';
-                 $like_count = $row['like_count'];
+                 $like_count = $like->countLikes($row['id']);
 
              ?>
                     <div class="bg-gray-100 rounded-lg shadow-md p-4">
@@ -129,7 +129,7 @@ if ($userLoggedIn) {
                                     <path d="M3 7H1a1 1 0 0 0-1 1v8a2 2 0 0 0 4 0V8a1 1 0 0 0-1-1Zm12.954 0H12l1.558-4.5a1.778 1.778 0 0 0-3.331-1.06A24.859 24.859 0 0 1 6 6.8v9.586h.114C8.223 16.969 11.015 18 13.6 18c1.4 0 1.592-.526 1.88-1.317l2.354-7A2 2 0 0 0 15.954 7Z"/>
                                 </svg>
                             </a>
-                            <a href="./pages/add_comment.php?article_id=<?= $row['id']; ?>" class="inline-flex items-center py-2.5 px-4 text-xs font-medium text-center text-white bg-blue-700 rounded-lg focus:ring-4 focus:ring-primary-200 dark:focus:ring-primary-900 hover:bg-primary-800">
+                            <a href="./pages/add_comment.php?article_id=<?= $row['id']; ?>"  class="inline-flex items-center py-2.5 px-4 text-xs font-medium text-center text-white bg-blue-700 rounded-lg focus:ring-4 focus:ring-primary-200 dark:focus:ring-primary-900 hover:bg-primary-800">
                                 Post comment
                             </a>  
                         </div>

@@ -6,7 +6,6 @@ class Like {
     public $article_id;
     public $created_at;
 
-    // Constructor to initialize the database connection and optionally load a like by id
     public function __construct($db, $id = null) {
         $this->db = $db;
 
@@ -15,7 +14,6 @@ class Like {
         }
     }
 
-    // Load a like by its id
     public function loadLikeById($id) {
         $sql = "SELECT * FROM likes WHERE id = :id";
         $stmt = $this->db->prepare($sql);
@@ -29,16 +27,17 @@ class Like {
         $this->created_at = $result['created_at'];
     }
 
-    // Add a like to an article
     public function addLike($user_id, $article_id) {
-        $sql = "INSERT INTO likes (user_id, article_id) VALUES (:user_id, :article_id)";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':user_id', $user_id);
-        $stmt->bindParam(':article_id', $article_id);
-        return $stmt->execute();
+        if (!$this->userHasLiked($user_id, $article_id)) {
+            $sql = "INSERT INTO likes (user_id, article_id) VALUES (:user_id, :article_id)";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':user_id', $user_id);
+            $stmt->bindParam(':article_id', $article_id);
+            return $stmt->execute();
+        }
+        return false;
     }
 
-    // Remove a like from an article
     public function removeLike($user_id, $article_id) {
         $sql = "DELETE FROM likes WHERE user_id = :user_id AND article_id = :article_id";
         $stmt = $this->db->prepare($sql);
@@ -47,7 +46,6 @@ class Like {
         return $stmt->execute();
     }
 
-    // Check if a user has liked an article
     public function userHasLiked($user_id, $article_id) {
         $sql = "SELECT * FROM likes WHERE user_id = :user_id AND article_id = :article_id";
         $stmt = $this->db->prepare($sql);
@@ -57,7 +55,14 @@ class Like {
         return $stmt->fetch(PDO::FETCH_ASSOC) ? true : false;
     }
 
-    // Get all likes for an article
+    public function toggleLike($user_id, $article_id) {
+        if ($this->userHasLiked($user_id, $article_id)) {
+            return $this->removeLike($user_id, $article_id);
+        } else {
+            return $this->addLike($user_id, $article_id);
+        }
+    }
+
     public static function getAllLikesForArticle($db, $article_id) {
         $sql = "SELECT * FROM likes WHERE article_id = :article_id";
         $stmt = $db->prepare($sql);
@@ -66,14 +71,15 @@ class Like {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-        // Toggle the like state for a user on an article
-        public function toggleLike($user_id, $article_id) {
-            if ($this->userHasLiked($user_id, $article_id)) {
-                return $this->removeLike($user_id, $article_id);
-            } else {
-                return $this->addLike($user_id, $article_id);
-            }
-        }
-
+    public function countLikes($article_id) {
+        $sql = "SELECT COUNT(*) as total_likes FROM likes WHERE article_id = :article_id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':article_id', $article_id);
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['total_likes'];
+    }
+    
 }
+
 ?>
