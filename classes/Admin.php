@@ -1,14 +1,12 @@
 <?php
-class Admin {
-    private $conn;
-
+class Admin extends User {
     // Constructeur qui prend la connexion à la base de données
-    public function __construct($conn) {
-        $this->conn = $conn;
+    private function __construct($conn, $user_id) {
+        parent::__construct($conn, $user_id); // Appelle le constructeur de la classe parent (User)
     }
 
     // Méthode pour obtenir un utilisateur par son ID
-    public function getUserById($userId) {
+    private function getUserById($userId) {
         $sql = "SELECT * FROM users WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(1, $userId, PDO::PARAM_INT);
@@ -17,14 +15,14 @@ class Admin {
     }
 
     // Méthode pour obtenir tous les rôles
-    public function getRoles() {
+    private function getRoles() {
         $sql = "SELECT * FROM roles";
         $stmt = $this->conn->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC); // Retourne tous les rôles
     }
 
     // Méthode pour mettre à jour le rôle d'un utilisateur
-    public function updateUserRole($userId, $roleId) {
+    private function updateUserRole($userId, $roleId) {
         $sql = "UPDATE users SET role_id = ? WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(1, $roleId, PDO::PARAM_INT);
@@ -33,7 +31,7 @@ class Admin {
     }
 
     // Méthode pour obtenir un tag par son ID
-    public function getTagById($tagId) {
+    private function getTagById($tagId) {
         $sql = "SELECT * FROM tags WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(1, $tagId, PDO::PARAM_INT);
@@ -42,7 +40,7 @@ class Admin {
     }
 
     // Méthode pour mettre à jour le nom d'un tag
-    public function updateTagName($tagId, $tagName) {
+    private function updateTagName($tagId, $tagName) {
         $sql = "UPDATE tags SET name = ? WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(1, $tagName, PDO::PARAM_STR);
@@ -51,7 +49,7 @@ class Admin {
     }
 
     // Méthode pour obtenir le nombre total d'articles
-    public function getTotalArticles() {
+    private function getTotalArticles() {
         $sql = "SELECT COUNT(*) AS total_articles FROM articles";
         $stmt = $this->conn->query($sql);
         if ($stmt) {
@@ -61,7 +59,7 @@ class Admin {
     }
 
     // Méthode pour obtenir le nombre total d'utilisateurs
-    public function getTotalUsers() {
+    private function getTotalUsers() {
         $sql = "SELECT COUNT(*) AS total_users FROM users";
         $stmt = $this->conn->query($sql);
         if ($stmt) {
@@ -71,7 +69,7 @@ class Admin {
     }
 
     // Méthode pour obtenir le nombre total de tags
-    public function getTotalTags() {
+    private function getTotalTags() {
         $sql = "SELECT COUNT(DISTINCT tag_id) AS total_tags FROM article_tags";
         $stmt = $this->conn->query($sql);
         if ($stmt) {
@@ -81,19 +79,19 @@ class Admin {
     }
 
     // Méthode pour récupérer les commentaires d'un article
-    public function getCommentsByArticle($articleId) {
+    private function getCommentsByArticle($articleId) {
         $comment = new Comment($this->conn);
         return $comment->getCommentsByArticle($articleId);
     }
 
     // Méthode pour supprimer un commentaire
-    public function deleteComment($commentId) {
+    private function deleteComment($commentId) {
         $comment = new Comment($this->conn);
         return $comment->deleteComment($commentId);
     }
 
     // Méthode pour obtenir le rôle d'un utilisateur
-    public function getUserRole($userId) { 
+    private function getUserRole($userId) { 
         $sql = "SELECT role_id FROM users WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(1, $userId, PDO::PARAM_INT);
@@ -103,14 +101,14 @@ class Admin {
     }
 
     // Méthode pour obtenir tous les utilisateurs avec leurs rôles
-    public function getAllUsers() {
+    private function getAllUsers() {
         $sql = "SELECT users.id, users.username, users.email, roles.name AS role_name FROM users 
                 JOIN roles ON users.role_id = roles.id";
         $stmt = $this->conn->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getCommentByIdAndUser($commentId, $userId) {
+    private function getCommentByIdAndUser($commentId, $userId) {
         $sql = "SELECT * FROM comments WHERE id = ? AND user_id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(1, $commentId, PDO::PARAM_INT);
@@ -120,7 +118,7 @@ class Admin {
     }
 
     // Méthode pour mettre à jour un commentaire
-    public function updateComment($commentId, $newContent) {
+    private function updateComment($commentId, $newContent) {
         $sql = "UPDATE comments SET content = ? WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(1, $newContent, PDO::PARAM_STR);
