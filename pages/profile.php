@@ -29,26 +29,22 @@ $tags = $tagObj->getAllTags($db);
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     try {
-        echo "Étape 1 : Formulaire soumis.<br>";
         $title = $_POST['title'];
         $content = $_POST['content'];
         $tags = $_POST['tags'] ?? []; // Par défaut, un tableau vide
         $user_id = $_SESSION['user_id'];
 
         if (!empty($_FILES['image']['name']) && $_FILES['image']['error'] === 0) {
-            echo "Étape 2 : Image valide.<br>";
             $image = $_FILES['image']['name'];
             $target_dir = '../uploads/';
             $target_file = $target_dir . basename($image);
 
             if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
-                echo "Étape 3 : Image téléchargée.<br>";
                 $article_id = $articleObj->createArticle($title, $content, $image, $user_id);
 
                 if ($article_id) {
-                    echo "Étape 4 : Article ajouté avec succès.<br>";
                     foreach ($tags as $tag_id) {
-                        $articleObj->addTag($tag_id);
+                        $articleObj->addTag($article_id, $tag_id); // Passe l'ID de l'article à addTag
                     }
                     echo "<p class='text-green-500'>Article ajouté avec succès !</p>";
                 } else {

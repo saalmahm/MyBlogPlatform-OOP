@@ -107,13 +107,14 @@ class Article {
     
 
     // Add a tag to an article
-    public function addTag($tag_id) {
+    public function addTag($article_id, $tag_id) {
         $sql = "INSERT INTO article_tags (article_id, tag_id) VALUES (:article_id, :tag_id)";
         $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':article_id', $this->id);
+        $stmt->bindParam(':article_id', $article_id);
         $stmt->bindParam(':tag_id', $tag_id);
         return $stmt->execute();
     }
+    
 
     // Remove a tag from an article
     public function removeTag($tag_id) {

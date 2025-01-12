@@ -10,8 +10,6 @@ $conn = $db->connect();
 if (isset($_GET['article_id'])) {
     $article_id = intval($_GET['article_id']);
     
-    echo "<p>Debug: article_id is $article_id</p>"; // Debugging output
-
     $article = new Article($conn, $article_id);
     $comment = new Comment($conn);
 
@@ -28,13 +26,12 @@ if (isset($_GET['article_id'])) {
 }
 ?>
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comments</title>
+    <title>Commentaires</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50">
@@ -53,13 +50,13 @@ if (isset($_GET['article_id'])) {
                     <div class="bg-white p-5 rounded-lg shadow flex items-start space-x-4">
                         <div class="flex-shrink-0">
                             <div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-semibold">
-                                <?= strtoupper(substr(htmlspecialchars($comment->getUsername()), 0, 1)); ?>
+                                <?= strtoupper(substr(htmlspecialchars($comment['username']), 0, 1)); ?>
                             </div>
                         </div>
                         <div>
-                            <p class="text-gray-800 font-semibold"><?= htmlspecialchars($comment->getUsername()); ?></p>
-                            <p class="text-gray-700 mt-1"><?= nl2br(htmlspecialchars($comment->getContent())); ?></p>
-                            <p class="text-gray-500 text-sm mt-2"><?= htmlspecialchars($comment->getCreatedAt()); ?></p>
+                            <p class="text-gray-800 font-semibold"><?= htmlspecialchars($comment['username']); ?></p>
+                            <p class="text-gray-700 mt-1"><?= nl2br(htmlspecialchars($comment['content'])); ?></p>
+                            <p class="text-gray-500 text-sm mt-2"><?= htmlspecialchars($comment['created_at']); ?></p>
                         </div>
                     </div>
                 <?php endforeach; ?>

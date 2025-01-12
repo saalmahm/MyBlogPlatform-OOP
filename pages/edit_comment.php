@@ -1,8 +1,8 @@
 <?php
 session_start();
 
-include("/classes/Database.php");
-include("/classes/Admin.php");
+require_once "../classes/Database.php";
+require_once "../classes/Admin.php";
 
 // Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {

@@ -27,43 +27,28 @@ class Comment {
     }
 
     // Récupérer les commentaires d'un article
-    public function getCommentsByArticle($article_id) {
-        $query = "
-            SELECT 
-                comments.id AS comment_id, 
-                comments.article_id,
-                comments.user_id,
-                comments.content AS comment_content, 
-                comments.created_at AS comment_created_at, 
-                users.username AS comment_author
-            FROM 
-                comments
-            LEFT JOIN 
-                users ON comments.user_id = users.id
-            WHERE 
-                comments.article_id = :article_id
-        ";
-
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(':article_id', $article_id, PDO::PARAM_INT);
-        $stmt->execute();
-
-        $comments = [];
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $comment = new Comment($this->conn);
-            $comment->setAttributes(
-                $row['comment_id'], 
-                $row['article_id'], 
-                $row['user_id'], 
-                $row['comment_content'], 
-                $row['comment_created_at'], 
-                $row['comment_author']
-            );
-            $comments[] = $comment;
-        }
-
-        return $comments;
-    }
+    
+        public function getCommentsByArticle($article_id) {
+            $query = "
+                SELECT 
+                    comments.id AS comment_id, 
+                    comments.article_id,
+                    comments.user_id,
+                    comments.content, 
+                    comments.created_at, 
+                    users.username
+                FROM 
+                    comments
+                LEFT JOIN 
+                    users ON comments.user_id = users.id
+                WHERE 
+                    comments.article_id = :article_id
+            ";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindValue(':article_id', $article_id, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }    
 
     // Ajouter un commentaire
     public function addComment($article_id, $user_id, $content) {
