@@ -65,5 +65,15 @@ class Like {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+        // Toggle the like state for a user on an article
+        public function toggleLike($user_id, $article_id) {
+            if ($this->userHasLiked($user_id, $article_id)) {
+                return $this->removeLike($user_id, $article_id);
+            } else {
+                return $this->addLike($user_id, $article_id);
+            }
+        }
+
 }
 ?>

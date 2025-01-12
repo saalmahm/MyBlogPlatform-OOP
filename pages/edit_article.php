@@ -1,8 +1,9 @@
 <?php
 session_start();
-require_once '/classes/Database.php';
-require_once '/classes/Article.php';
-require_once '/classes/ArticleTags.php';
+require_once '../classes/Database.php';
+require_once '../classes/Article.php';
+require_once '../classes/ArticleTags.php';
+require_once '../classes/Tag.php';
 
 $db = new Database();
 $conn = $db->connect();
@@ -12,6 +13,11 @@ if (!isset($_SESSION['user_id'])) {
     header('Location: login.php'); 
     exit;
 }
+
+$tagObj = new Tag($db);
+$tags = $tagObj->getAllTags($db);
+
+$article = null;
 
 if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['id'])) {
     $article_id = $_GET['id'];
@@ -29,7 +35,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['id'])) {
     $title = $_POST['title'];
     $content = $_POST['content'];
     $article_id = $_POST['id'];
-    $tags = $_POST['tags'];
+    $tags = isset($_POST['tags']) ? $_POST['tags'] : [];
+
+    if (!$article) {
+        $article = new Article($conn, $article_id);
+    }
 
     if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
         $image = $_FILES['image']['name'];
@@ -43,16 +53,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['id'])) {
             exit;
         }
     } else {
-        $article->updateArticle($title, $content);
+        $article->updateArticle($title, $content, $article->image);
     }
 
     $articleTags = new ArticleTags($conn);
-    $articleTags->removeTagFromArticle($article_id, $tag_id); // Suppression des tags associés
+    // Suppression des tags associés
+    $articleTags->removeAllTagsFromArticle($article_id);
+
+    // Ajout des nouveaux tags sans duplications
     foreach ($tags as $tag_id) {
-        $articleTags->addTagToArticle($article_id, $tag_id); // Ajout des nouveaux tags
+        $articleTags->addTagToArticle($article_id, $tag_id);
     }
 
     header("Location: profile.php");
+    exit;
 }
 ?>
 
@@ -90,18 +104,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['id'])) {
         <div class="mb-4">
             <label for="tags" class="block text-sm font-medium text-gray-700">Tags</label>
             <select name="tags[]" id="tags" multiple class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
-                <?php
-                // Fetch tags for the current article
-                $selected_tags = $articleTags->getAllTagsForArticle($conn, $article_id);
-                $selected_tag_ids = array_map(function($tag) { return $tag['id']; }, $selected_tags);
-
-                $query = "SELECT * FROM tags";
-                $result = $conn->query($query);
-                while ($row = $result->fetch_assoc()) {
-                    $selected = in_array($row['id'], $selected_tag_ids) ? 'selected' : '';
-                    echo "<option value='" . $row['id'] . "' $selected>" . htmlspecialchars($row['name']) . "</option>";
-                }
-                ?>
+            <?php
+            foreach ($tags as $tag) {
+                echo "<option value='" . htmlspecialchars($tag['id']) . "'>" . htmlspecialchars($tag['name']) ."</option>";
+            }
+            ?>
             </select>
             <small class="text-gray-500">Hold Ctrl (or Command on Mac) to select multiple tags.</small>
         </div>

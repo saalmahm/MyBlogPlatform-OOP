@@ -18,11 +18,7 @@ if ($userLoggedIn && isset($_GET['like'])) {
     $user_id = $_SESSION['user_id'];
     
     $like = new Like($conn);
-    if (!$like->userHasLiked($user_id, $article_id)) {
-        $like->addLike($user_id, $article_id);
-    } else {
-        $like->removeLike($user_id, $article_id);
-    }
+    $like->toggleLike($user_id, $article_id); 
 }
 
 if ($userLoggedIn) {

@@ -25,33 +25,35 @@ $role = $currentUser['role_id'];
 $articleObj = new Article($db);
 $tagObj = new Tag($db);
 $likeObj = new Like($db);
+$tags = $tagObj->getAllTags($db);
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     try {
+        echo "Étape 1 : Formulaire soumis.<br>";
         $title = $_POST['title'];
         $content = $_POST['content'];
         $tags = $_POST['tags'] ?? []; // Par défaut, un tableau vide
         $user_id = $_SESSION['user_id'];
 
         if (!empty($_FILES['image']['name']) && $_FILES['image']['error'] === 0) {
+            echo "Étape 2 : Image valide.<br>";
             $image = $_FILES['image']['name'];
             $target_dir = '../uploads/';
             $target_file = $target_dir . basename($image);
 
             if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
-                $query = "INSERT INTO articles (title, content, image, user_id) VALUES (?, ?, ?, ?)";
-                $stmt = $db->prepare($query);
-                $stmt->execute([$title, $content, $image, $user_id]);
+                echo "Étape 3 : Image téléchargée.<br>";
+                $article_id = $articleObj->createArticle($title, $content, $image, $user_id);
 
-                $article_id = $db->lastInsertId();
-                $tag_query = "INSERT INTO article_tags (article_id, tag_id) VALUES (?, ?)";
-                $tag_stmt = $db->prepare($tag_query);
-
-                foreach ($tags as $tag_id) {
-                    $tag_stmt->execute([$article_id, $tag_id]);
+                if ($article_id) {
+                    echo "Étape 4 : Article ajouté avec succès.<br>";
+                    foreach ($tags as $tag_id) {
+                        $articleObj->addTag($tag_id);
+                    }
+                    echo "<p class='text-green-500'>Article ajouté avec succès !</p>";
+                } else {
+                    echo "<p class='text-red-500'>Erreur lors de l'ajout de l'article.</p>";
                 }
-
-                echo "<p class='text-green-500'>Article ajouté avec succès !</p>";
             } else {
                 echo "<p class='text-red-500'>Erreur lors du téléchargement de l'image.</p>";
             }
@@ -71,7 +73,9 @@ if ($userLoggedIn && isset($_GET['like'])) {
 
 // Récupérer les articles de l'utilisateur
 $articles = $articleObj->getArticlesByUser($user_id);
+$tags = Tag::getAllTags($db); // Récupère tous les tags ici
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -154,38 +158,42 @@ $articles = $articleObj->getArticlesByUser($user_id);
 
 <section>
     <div class="container mx-auto px-4 mt-10"> 
-    <div class="flex mb-8">
-
-    <button class="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700" onclick="openModal()">            <span class="relative px-6 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
-                + Add an article
-            </span>
-        </button>
+        <div class="flex mb-8">
+            <button class="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700" onclick="openModal()">            
+                <span class="relative px-6 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
+                    + Add an article
+                </span>
+            </button>
         </div>
 
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-10">
-            <?php foreach ($articles as $article): ?>
+            <?php 
+            $articles = Article::getAllArticles($db);
+            foreach ($articles as $article): ?>
                 <div class='bg-gray-100 rounded-lg shadow-md p-4'>
                     <div class='flex justify-between'>
-                        <h3 class='text-xl font-bold mb-2 '>Titre de l'article</h3>
+                        <h3 class='text-xl font-bold mb-2 '><?php echo htmlspecialchars($article['title']); ?></h3>
                         <div class='flex'>
                             <button class='text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800'>
-                                <a href='edit_article.php?id=1'>Edit</a>
+                                <a href='edit_article.php?id=<?php echo htmlspecialchars($article['id']); ?>'>Edit</a>
                             </button>
                             <button class='text-white bg-red-700 hover:bg-red-800 focus:outline-none focus:ring-4 focus:ring-red-300 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900'>
-                                <a href='delete_article.php?id=1'>Delete</a>
+                                <a href='delete_article.php?id=<?php echo htmlspecialchars($article['id']); ?>'>Delete</a>
                             </button>
                         </div>
                     </div>
-                    <p class='text-gray-700 mb-4'>Contenu de l'article</p>
-                    <img src='/uploads/image.jpg' alt="Image de l'article" class='w-full h-48 object-cover mb-4 rounded-lg'>
-                    <p class='text-gray-600 text-sm'>Par Nom d'utilisateur le Date de création</p>
-                    <p class='text-blue-600 text-sm'>Tags : Nom des tags</p>
+                    <p class='text-gray-700 mb-4'><?php echo htmlspecialchars($article['content']); ?></p>
+                    <img src='/uploads/<?php echo htmlspecialchars($article['image']); ?>' alt="Image de l'article" class='w-full h-48 object-cover mb-4 rounded-lg'>
+                    <p class='text-gray-600 text-sm'>Par <?php echo htmlspecialchars($article['username'] ?? 'Utilisateur inconnu'); ?> le <?php echo htmlspecialchars($article['created_at'] ?? 'Date inconnue'); ?></p>
+                    <p class='text-blue-600 text-sm'>Tags : <?php echo htmlspecialchars($article['tags'] ?? 'Aucun tag'); ?></p>
                 </div>
             <?php endforeach; ?>
         </div>
     </div>
 </section>
-<div id="modal" class="fixed z-10 inset-0 overflow-y-auto mt-6 ">        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+
+
+<div id="modal" class="fixed z-10 inset-0 overflow-y-auto mt-6 hidden ">        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 transition-opacity" aria-hidden="true">
                 <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
             </div>
@@ -198,7 +206,7 @@ $articles = $articleObj->getArticlesByUser($user_id);
                                 Add an Article
                             </h3>
                             <div class="mt-2">
-                            <form id="articleForm" method="POST" enctype="multipart/form-data">
+<form id="articleForm" method="POST" enctype="multipart/form-data">
     <div class="mb-4">
         <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
         <input type="text" id="title" name="title" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" required>
@@ -215,7 +223,9 @@ $articles = $articleObj->getArticlesByUser($user_id);
         <label for="tags" class="block text-sm font-medium text-gray-700">Tags</label>
         <select id="tags" name="tags[]" multiple class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
             <?php
-         $tags = $tagObj->getAllTags($db);
+            foreach ($tags as $tag) {
+                echo "<option value='" . htmlspecialchars($tag['id']) . "'>" . htmlspecialchars($tag['name']) ."</option>";
+            }
             ?>
         </select>
         <small class="text-gray-500">Hold Ctrl (or Command on Mac) to select multiple tags.</small>
@@ -224,14 +234,12 @@ $articles = $articleObj->getArticlesByUser($user_id);
         <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">
             Add Article
         </button>
-        <button 
-  type="button" 
-  class="py-2.5 px-5 me-2 mb-2 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100"
-  onclick="closeModal()">
-  Cancel
-</button>
+        <button type="button" class="py-2.5 px-5 me-2 mb-2 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100" onclick="closeModal()">
+            Cancel
+        </button>
     </div>
 </form>
+
 </div>
 </div>
  </div>

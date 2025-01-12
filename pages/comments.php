@@ -1,8 +1,8 @@
 <?php
 session_start();
-require_once '/classes/Database.php';
-require_once '/classes/Article.php';
-require_once '/classes/Comment.php';
+require_once '../classes/Database.php';
+require_once '../classes/Article.php';
+require_once '../classes/Comment.php';
 
 $db = new Database();
 $conn = $db->connect();
@@ -10,6 +10,8 @@ $conn = $db->connect();
 if (isset($_GET['article_id'])) {
     $article_id = intval($_GET['article_id']);
     
+    echo "<p>Debug: article_id is $article_id</p>"; // Debugging output
+
     $article = new Article($conn, $article_id);
     $comment = new Comment($conn);
 
@@ -25,6 +27,7 @@ if (isset($_GET['article_id'])) {
     exit;
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">

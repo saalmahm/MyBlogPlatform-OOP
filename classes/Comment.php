@@ -41,17 +41,15 @@ class Comment {
             LEFT JOIN 
                 users ON comments.user_id = users.id
             WHERE 
-                comments.article_id = ?
+                comments.article_id = :article_id
         ";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bind_param('i', $article_id);
+        $stmt->bindValue(':article_id', $article_id, PDO::PARAM_INT);
         $stmt->execute();
 
-        $result = $stmt->get_result();
         $comments = [];
-
-        while ($row = $result->fetch_assoc()) {
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $comment = new Comment($this->conn);
             $comment->setAttributes(
                 $row['comment_id'], 
@@ -69,38 +67,39 @@ class Comment {
 
     // Ajouter un commentaire
     public function addComment($article_id, $user_id, $content) {
-        $query = "INSERT INTO comments (article_id, user_id, content) VALUES (?, ?, ?)";
+        $query = "INSERT INTO comments (article_id, user_id, content) VALUES (:article_id, :user_id, :content)";
         $stmt = $this->conn->prepare($query);
-        $stmt->bind_param('iis', $article_id, $user_id, $content);
+        $stmt->bindValue(':article_id', $article_id, PDO::PARAM_INT);
+        $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
+        $stmt->bindValue(':content', $content, PDO::PARAM_STR);
         return $stmt->execute();
     }
 
     // Mettre à jour un commentaire
     public function updateComment($comment_id, $content) {
-        $query = "UPDATE comments SET content = ? WHERE id = ?";
+        $query = "UPDATE comments SET content = :content WHERE id = :comment_id";
         $stmt = $this->conn->prepare($query);
-        $stmt->bind_param('si', $content, $comment_id);
+        $stmt->bindValue(':content', $content, PDO::PARAM_STR);
+        $stmt->bindValue(':comment_id', $comment_id, PDO::PARAM_INT);
         return $stmt->execute();
     }
 
     // Supprimer un commentaire
     public function deleteComment($comment_id) {
-        $query = "DELETE FROM comments WHERE id = ?";
+        $query = "DELETE FROM comments WHERE id = :comment_id";
         $stmt = $this->conn->prepare($query);
-        $stmt->bind_param('i', $comment_id);
+        $stmt->bindValue(':comment_id', $comment_id, PDO::PARAM_INT);
         return $stmt->execute();
     }
-    public function getCommentsByUser($user_id) { 
-        $query = "SELECT comments.id, comments.content, articles.title FROM comments JOIN articles ON comments.article_id = articles.id WHERE comments.user_id = :user_id";
-         $stmt = $this->conn->prepare($query); $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT); $stmt->execute();
-          return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        }
-    // Accesseurs pour les propriétés
-    public function getId() { return $this->id; }
-    public function getArticleId() { return $this->article_id; }
-    public function getUserId() { return $this->user_id; }
-    public function getContent() { return $this->content; }
-    public function getCreatedAt() { return $this->created_at; }
-    public function getUsername() { return $this->username; }
+
+    // Récupérer les commentaires d'un utilisateur
+    public function getCommentsByUser($user_id) {
+        $query = "SELECT comments.*, articles.title FROM comments 
+                  JOIN articles ON comments.article_id = articles.id
+                  WHERE comments.user_id = :user_id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
-?>

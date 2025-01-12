@@ -20,16 +20,24 @@ class Article {
     public function loadArticleById($id) {
         $sql = "SELECT * FROM articles WHERE id = :id";
         $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        $this->id = $result['id'];
-        $this->title = $result['title'];
-        $this->content = $result['content'];
-        $this->image = $result['image'];
-        $this->user_id = $result['user_id'];
+    
+        if ($result) {
+            $this->id = $result['id'];
+            $this->title = $result['title'];
+            $this->content = $result['content'];
+            $this->image = $result['image'];
+            $this->user_id = $result['user_id'];
+            return true;
+        } else {
+            echo "<p class='text-red-500 text-center mt-6'>Aucun article trouvé avec l'ID $id.</p>";
+            return false;
+        }
     }
+    
+    
 
     // Create a new article
     public function createArticle($title, $content, $image, $user_id) {
@@ -39,8 +47,15 @@ class Article {
         $stmt->bindParam(':content', $content);
         $stmt->bindParam(':image', $image);
         $stmt->bindParam(':user_id', $user_id);
-        return $stmt->execute();
+        
+        if ($stmt->execute()) {
+            return $this->db->lastInsertId();
+        } else {
+            echo "Erreur d'insertion : " . implode(" - ", $stmt->errorInfo());
+            return false;
+        }
     }
+    
 
     // Update an existing article
     public function updateArticle($title, $content, $image) {
@@ -57,31 +72,31 @@ class Article {
     public function deleteArticle() {
         try {
             $this->db->beginTransaction();
-
-            // Delete tags associated with the article
+    
+            // Suppression des tags associés
             $sql = "DELETE FROM article_tags WHERE article_id = :id";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':id', $this->id);
             $stmt->execute();
-
-            // Delete likes associated with the article
+    
+            // Suppression des likes associés
             $sql = "DELETE FROM likes WHERE article_id = :id";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':id', $this->id);
             $stmt->execute();
-
-            // Delete comments associated with the article
+    
+            // Suppression des commentaires associés
             $sql = "DELETE FROM comments WHERE article_id = :id";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':id', $this->id);
             $stmt->execute();
-
-            // Delete the article itself
+    
+            // Suppression de l'article lui-même
             $sql = "DELETE FROM articles WHERE id = :id";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':id', $this->id);
             $stmt->execute();
-
+    
             $this->db->commit();
             return true;
         } catch (Exception $e) {
@@ -89,6 +104,7 @@ class Article {
             return false;
         }
     }
+    
 
     // Add a tag to an article
     public function addTag($tag_id) {
@@ -109,18 +125,23 @@ class Article {
     }
 
     // Get all articles
-    public static function getAllArticles($db) {
-        $sql = "
-            SELECT articles.*, users.username, GROUP_CONCAT(tags.name SEPARATOR ', ') AS tags
-            FROM articles
-            JOIN users ON articles.user_id = users.id
-            LEFT JOIN article_tags ON articles.id = article_tags.article_id
-            LEFT JOIN tags ON article_tags.tag_id = tags.id
-            GROUP BY articles.id
-        ";
-        $stmt = $db->query($sql);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
+        public static function getAllArticles($db) {
+            $sql = "
+                SELECT articles.*, users.username, GROUP_CONCAT(tags.name SEPARATOR ', ') AS tags,
+                       COALESCE(SUM(likes.id), 0) AS like_count
+                FROM articles
+                JOIN users ON articles.user_id = users.id
+                LEFT JOIN article_tags ON articles.id = article_tags.article_id
+                LEFT JOIN tags ON article_tags.tag_id = tags.id
+                LEFT JOIN likes ON articles.id = likes.article_id
+                GROUP BY articles.id
+            ";
+            $stmt = $db->query($sql);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+ 
+    
+
     public function getArticleWithTags($article_id) {
         $sql = "
             SELECT articles.*, GROUP_CONCAT(tags.name SEPARATOR ', ') AS tags 
@@ -140,6 +161,9 @@ class Article {
         $sql = "SELECT * FROM articles WHERE user_id = :user_id"; 
         $stmt = $this->db->prepare($sql); 
         $stmt->bindParam(':user_id', $user_id);
-         $stmt->execute(); return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}}
+        $stmt->execute(); 
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+}
+
 ?>

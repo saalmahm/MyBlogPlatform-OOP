@@ -43,8 +43,12 @@ $comments = $comment->getCommentsByUser($user_id);
             <tbody>
                 <?php foreach ($comments as $comment): ?>
                     <tr class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700">
-                        <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"><?php echo htmlspecialchars($comment['title']); ?></td>
-                        <td class="px-6 py-4"><?php echo htmlspecialchars(substr($comment['content'], 0, 100)) . '...'; ?></td>
+                        <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            <?php echo isset($comment['title']) ? htmlspecialchars($comment['title']) : 'No title'; ?>
+                        </td>
+                        <td class="px-6 py-4">
+                            <?php echo isset($comment['content']) ? htmlspecialchars(substr($comment['content'], 0, 100)) . '...' : 'No content'; ?>
+                        </td>
                         <td class="px-6 py-4">
                             <a href="edit_comment.php?id=<?php echo $comment['id']; ?>" class="font-medium text-blue-600 hover:underline">Edit</a> | 
                             <a href="delete_comment.php?id=<?php echo $comment['id']; ?>" class="font-medium text-red-600 hover:underline">Delete</a>

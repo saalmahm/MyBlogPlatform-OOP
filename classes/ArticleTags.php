@@ -49,6 +49,14 @@ class ArticleTags {
         return $stmt->execute();
     }
 
+    // Remove all tags from an article
+    public function removeAllTagsFromArticle($article_id) {
+        $sql = "DELETE FROM article_tags WHERE article_id = :article_id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':article_id', $article_id);
+        return $stmt->execute();
+    }
+
     // Get all tags for a specific article
     public static function getAllTagsForArticle($db, $article_id) {
         $sql = "SELECT tags.* FROM tags
@@ -71,4 +79,5 @@ class ArticleTags {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
+
 ?>
