@@ -1,8 +1,8 @@
 <?php
 class Tag {
     private $db;
-    public $id;
-    public $name;
+    private $id;
+    private $name;
 
     // Constructor to initialize the database connection and optionally load a tag by id
     public function __construct($db, $id = null) {

@@ -1,11 +1,11 @@
 <?php
 class Article {
     private $db;
-    public $id;
-    public $title;
-    public $content;
-    public $image;
-    public $user_id;
+    private $id;
+    private $title;
+    private $content;
+    private $image;
+    private $user_id;
 
     // Constructor to initialize the database connection and optionally load an article by id
     public function __construct($db, $id = null) {

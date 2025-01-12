@@ -1,9 +1,9 @@
 <?php
 class User {
     private $conn;
-    public $user_id;
-    public $username;
-    public $role_id;
+    private $user_id;
+    private $username;
+    private $role_id;
 
     public function __construct($conn, $user_id) {
         $this->conn = $conn;

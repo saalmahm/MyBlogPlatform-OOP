@@ -1,10 +1,10 @@
 <?php
 class Like {
     private $db;
-    public $id;
-    public $user_id;
-    public $article_id;
-    public $created_at;
+    private $id;
+    private $user_id;
+    private $article_id;
+    private $created_at;
 
     public function __construct($db, $id = null) {
         $this->db = $db;

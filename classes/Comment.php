@@ -2,8 +2,7 @@
 
 class Comment {
     private $conn;
-    private $table = 'comments';
-    
+    private $table = 'comments'; 
     private $id;
     private $article_id;
     private $user_id;
